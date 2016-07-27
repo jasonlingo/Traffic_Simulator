@@ -79,7 +79,7 @@ class Car(object):
         """
         Get the acceleration of the speed of this car.
         For the detail of this model, refer to https://en.wikipedia.org/wiki/Intelligent_driver_model
-        :return: accelerating speed
+        :return: accelerating factor
         """
         # some constant parameters
         TIME_HEAD_AWAY   = 1.5    # second
@@ -89,7 +89,7 @@ class Car(object):
 
         nextCar, nextDistance = self.trajectory.nextCarDistance()
         distanceToNextCar = max(nextDistance, 0)
-        deltaSpeed = self.speed - (nextCar.speed if nextCar is not None else 0)
+        deltaSpeed = self.speed - (nextCar.speed if nextCar is not None else 0) # TODO: check
         speedRatio = (self.speed / self.maxSpeed)
         freeRoadCoeff = pow(speedRatio, 4)
 
