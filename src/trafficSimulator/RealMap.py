@@ -2,21 +2,23 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from Shapefile import Shapefile
-from Road import Road
-from Car import *
 import pygmaps
 import webbrowser
 import time
+from Shapefile import Shapefile
+from Road import Road
+from Car import *
 from src.Dijkstra import *
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 
 class RealMap(object):
     """
-    A class that uses real world road data, including the coordinates of road and intersection.
+    A class that uses real world road data to construct a map.
     """
 
-    def __init__(self, shapefileName):
+    def __init__(self, shapefileName, dataNum):
         """
         1. Initialize a real map according to a shapefile.
         2. Get the information of road and intersection from the parsed shapefile.
@@ -26,9 +28,10 @@ class RealMap(object):
         :param shapefileName: the file name of the given shapefile
         """
 
-        self.she = Shapefile(shapefileName)
+        self.she = Shapefile(shapefileName, dataNum)  # parse shapefile
         self.roads = {}
         self.intersections = {}
+
         self.createMap()
 
         self.board = self.she.getBoard()  # [top, bot, right, left] of the borders of this map
@@ -54,7 +57,7 @@ class RealMap(object):
         for inter in self.she.getIntersections().values():
             for rd in self.she.getRoads().values():
                 # =========================
-                # only for the purpose of viewing progress
+                # showing progress
                 i += 1
                 if i % 1000000 == 0:
                     print ".",
@@ -95,6 +98,8 @@ class RealMap(object):
         print "checking map"
 
         # removing unwanted roads and intersections
+        # remove intersections that have not connected to any road
+        # remove roads that have not connected to any intersection
         removeRoads = []
         removeInters = []
         for inter in self.intersections.values():
@@ -112,10 +117,13 @@ class RealMap(object):
         for rd in removeRoads:
             del self.roads[rd.id]
 
+
+        # =====================================================================
         # checking map
+        # =====================================================================
         for road in self.roads.values():
             if not road.getTarget() or not road.getSource():
-                print "Eff: incomplete road"
+                print "Err: incomplete road"
             if not road.lanes:
                 print "Err: no lane on a road"
         for inter in self.intersections.values():
@@ -124,11 +132,9 @@ class RealMap(object):
                 print "Err: intersection has no road"
             for rd in inter.getOutRoads():
                 if not rd.lanes:
-                    print "Eff: road", rd.id, "has no lane"
+                    print "Err: road", rd.id, "has no lane"
 
-        allInter = []
-        for inter in self.intersections.values():
-            allInter.append(inter.id)
+        allInter = [inter.id for inter in self.intersections.values()]
 
         for road in self.roads.values():
             if road.target.id not in allInter:
@@ -217,7 +223,7 @@ class RealMap(object):
             carType = Taxi
         else:
             sys.stderr.write("RealMap: car type error:", carType)
-            sys.exit(2)
+            sys.exit(1)
 
         while len(carList) < num:
             lane, position = self.randomLaneLocation()
@@ -374,15 +380,25 @@ class RealMap(object):
             return
 
         inter = self.intersections.values()[0]
-        mymap = pygmaps.maps(inter.center[0], inter.center[1], 12)
+        mymap = pygmaps.maps(inter.center.lat, inter.center.lng, 12)
 
+        i = 0
         for inter in self.intersections.values():
-            mymap.addpoint(inter.center[0], inter.center[1], "#0000FF")
+            if len(inter.getInRoads()) == 1 and len(inter.getOutRoads()) == 1:
+                i += 1
+                mymap.addpoint(inter.center.lat, inter.center.lng, "#FF00FF")
+            else:
+                mymap.addpoint(inter.center.lat, inter.center.lng, "#0000FF")
+        print "%d intersections have only one road connected" % i
 
         for rd in self.roads.values():
             if rd.getSource() and rd.getTarget():
-                mymap.addpath([rd.getSource().center, rd.getTarget().center], "#00FF00")
-                # mymap.addpoint(point[0], point[1], "#00FF00")
+                mymap.addpath([(rd.getSource().center.lat, rd.getSource().center.lng),
+                               (rd.getTarget().center.lat, rd.getTarget().center.lng)], "#00FF00")
+
+        edges = [(self.she.top, self.she.left), (self.she.top, self.she.right), (self.she.bot, self.she.right), (self.she.bot, self.she.left)]
+
+        mymap.addpath(edges, "#FF00FF")
 
         mapFilename = "shapefileMap.html"
         mymap.draw('./' + mapFilename)
@@ -395,7 +411,5 @@ class RealMap(object):
 # =========================================================
 # For checking correctness
 # =========================================================
-# rm = RealMap("/Users/Jason/GitHub/Research/QLearning/Data/Roads_All.dbf")
-#
-# rm.plotAnimationMap()
-# ani = animation.FuncAnimation(fig, rm.animation, fargs=(particles))
+rm = RealMap("/Users/Jason/GitHub/Research/QLearning/Data/Roads_All.dbf", 6000)
+rm.plotMap()

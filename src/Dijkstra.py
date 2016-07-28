@@ -82,11 +82,3 @@ def dijkstraTrafficTime(graph, start, goals):
 
     return sys.maxint
 
-# def reconstructPath(came_from, start, goal):
-#     current = goal
-#     path = [current]
-#     while current != start:
-#         current = came_from[current]
-#         path.append(current)
-#     path.reverse()
-#     return path

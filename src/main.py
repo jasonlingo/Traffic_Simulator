@@ -32,7 +32,7 @@ if __name__ == '__main__':
         # experiment.showMap()
 
     # Create a RealMap object and pass it to a Environment object.
-    realMap = RealMap(SHAPEFILE)
+    realMap = RealMap(SHAPEFILE, 3000)
     env = Environment(realMap)
     exp = Experiment(env, TAXI_NUM, CAR_NUM, epsilon=EPSILON, alpha=ALPHA, gamma=GAMMA)
 
