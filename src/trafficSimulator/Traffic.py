@@ -18,6 +18,10 @@ class RoadType(object):
     INTERSECTION = "Intersection"
 
 
+class CarType(object):
+    CAR = "car"
+    TAXI = "taxi"
+
 def sample(obj, n):
     """
     return a shuffled sub-list of objects

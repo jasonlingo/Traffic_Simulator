@@ -7,7 +7,9 @@ import math
 from trafficSimulator.TrafficSettings import CLOSE_CRASH_LANE, CLOSE_ALL_CRASH_LANES
 from QLEnvironment import QLEnvironment
 from Settings import GOAL_REWARD
-from trafficSimulator.Car import Car, Taxi
+from trafficSimulator.Car import Car
+from trafficSimulator.Traffic import CarType
+import random
 
 
 class Environment(QLEnvironment):
@@ -22,7 +24,7 @@ class Environment(QLEnvironment):
         :return:
         """
         self.realMap = realMap
-        self.goalLocation = self.realMap.getGoalLanePosition()  # Trajectory object
+        # self.goalLocation = self.realMap.getGoalLanePosition()  # Trajectory object #TODO: turn off
 
         # block the goal road, only allow cars move out of the road
         self.block = None
@@ -127,12 +129,21 @@ class Environment(QLEnvironment):
         return False
 
     def addRandomCars(self, num):
-        self.realMap.addRandomCars(num, "car")
+        self.realMap.addRandomCars(num, CarType.CAR)
         self.cars = self.realMap.getCars()
 
     def addRandomTaxis(self, num):
-        self.realMap.addRandomCars(num, "taxi")
+        self.realMap.addRandomCars(num, CarType.TAXI)
         self.taxis = self.realMap.getTaxis()
+
+    def addCarFromSource(self):
+        self.realMap.addCarFromSource()
+
+    def randomCarAccident(self):
+        if not self.cars:
+            return
+        else:
+            return random.choice(self.cars.values())
 
     def cleanCars(self):
         self.realMap.cleanCars()
@@ -162,3 +173,4 @@ class Environment(QLEnvironment):
 
     def updateContralSignal(self, delta):
         self.realMap.updateContralSignal(delta)
+

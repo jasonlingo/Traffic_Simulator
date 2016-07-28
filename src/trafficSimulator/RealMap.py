@@ -5,12 +5,16 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import pygmaps
 import webbrowser
 import time
+from TrafficSettings import POI_LAMBDA
 from Shapefile import Shapefile
 from Road import Road
 from Car import *
 from src.Dijkstra import *
+import numpy
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+
+
 
 
 class RealMap(object):
@@ -31,13 +35,13 @@ class RealMap(object):
         self.she = Shapefile(shapefileName, dataNum)  # parse shapefile
         self.roads = {}
         self.intersections = {}
-
+        self.sinkSource = []              # sink and source intersections that cars come out and disappear
         self.createMap()
 
         self.board = self.she.getBoard()  # [top, bot, right, left] of the borders of this map
 
         self.goalLocation = None          # the car crash's location
-        self.setRandomGoalPosition()
+        # self.setRandomGoalPosition()
 
         self.cars = {}                    # store all cars' id and instance
         self.taxis = {}                   # store all taxis' id and instance
@@ -84,13 +88,18 @@ class RealMap(object):
                             self.intersections[sourceInter.id] = sourceInter
 
             if inter.getOutRoads() and inter.getInRoads():
-                self.intersections[inter.id] = inter
                 if len(inter.getOutRoads()) != len(inter.getInRoads()):
                     print "intersection has different number of out and in roads"
+                    continue
+                self.intersections[inter.id] = inter
+
 
         # add control signal on each intersection
+        # find the sink-source intersections
         for inter in self.intersections.values():
             inter.buildControlSignal()
+            if len(inter.getInRoads()) == 1:
+                self.sinkSource.append(inter)
 
         # examine map
         print ""
@@ -175,8 +184,8 @@ class RealMap(object):
             tmp = random.choice(self.roads.values())
             if tmp.getSource() and tmp.getTarget():
                 rd = tmp
-        lane = random.choice(rd.lanes)
-        position = random.random() * lane.getLength()
+        lane = random.choice(rd.getLanes())
+        position = random.random() * lane.getLength()  # TODO: check no car at that position
         return lane, position
 
     def setRandomGoalPosition(self):  # TODO: consider move to Experiment or Environment
@@ -193,7 +202,9 @@ class RealMap(object):
         return self.goalLocation
 
     def getGoalPosition(self):
-        return self.goalLocation.getCoords()
+        if self.goalLocation:
+            return self.goalLocation.getCoords()
+        return None
 
     def getGoalLanePosition(self):
         return self.goalLocation
@@ -215,10 +226,10 @@ class RealMap(object):
         :param num: the total number of cars to be added into the dictionary
         """
         print "realmap add " + carType
-        if carType == "car":
+        if carType == CarType.CAR:
             carList = self.cars
             carType = Car
-        elif carType == "taxi":
+        elif carType == CarType.TAXI:
             carList = self.taxis
             carType = Taxi
         else:
@@ -230,6 +241,26 @@ class RealMap(object):
             car = carType(lane, position)
             if self.checkOverlap(lane, position, car.length):
                 carList[car.id] = car
+
+    def addCarFromSource(self, pos_lambda):
+        """
+        For each sink-source intersection, get a number of new cars according to the poisson arrival process.
+        chose one lane from the out road of the intersection and add a car if there is not car at the position.
+        """
+        for inter in self.sinkSource:
+            lanes = inter.getOutRoads()[0].getLanes()  # there is only one out car for each sink-source intersection
+            numCar = numpy.random.poisson(pos_lambda)
+            for i in range(min(len(lanes), numCar)):
+                lane = lanes[i]
+                addCar = True
+                for car in lane.getCars():
+                    if car.trajectory.getAbsolutePosition() < CAR_LENGTH / 2:
+                        addCar = False
+                        break
+                if addCar:
+                    newCar = Car(lane, 0)
+                    self.cars[newCar.id] = newCar
+
 
     # def addRandomTaxi(self, num):
     #     """
@@ -384,7 +415,7 @@ class RealMap(object):
 
         i = 0
         for inter in self.intersections.values():
-            if len(inter.getInRoads()) == 1 and len(inter.getOutRoads()) == 1:
+            if inter in self.sinkSource:
                 i += 1
                 mymap.addpoint(inter.center.lat, inter.center.lng, "#FF00FF")
             else:
@@ -411,5 +442,5 @@ class RealMap(object):
 # =========================================================
 # For checking correctness
 # =========================================================
-rm = RealMap("/Users/Jason/GitHub/Research/QLearning/Data/Roads_All.dbf", 6000)
-rm.plotMap()
+# rm = RealMap("/Users/Jason/GitHub/Research/QLearning/Data/Roads_All.dbf", 6000)
+# rm.plotMap()

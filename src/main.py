@@ -3,6 +3,7 @@ from Experiment import Experiment
 from Settings import EXP_NUM, SHAPEFILE, TAXI_NUM, CAR_NUM, EPSILON, ALPHA, GAMMA
 from trafficSimulator.RealMap import RealMap
 from trafficSimulator.AnimatedMap import AnimatedMap
+from TrafficController import TrafficController
 import threading
 import matplotlib.pyplot as plt
 import time
@@ -32,16 +33,22 @@ if __name__ == '__main__':
         # experiment.showMap()
 
     # Create a RealMap object and pass it to a Environment object.
-    realMap = RealMap(SHAPEFILE, 3000)
+    mapSize = 5000  # number of shapefile data to be read to construct the map
+    realMap = RealMap(SHAPEFILE, mapSize)
     env = Environment(realMap)
-    exp = Experiment(env, TAXI_NUM, CAR_NUM, epsilon=EPSILON, alpha=ALPHA, gamma=GAMMA)
+    # exp = Experiment(env, TAXI_NUM, CAR_NUM, epsilon=EPSILON, alpha=ALPHA, gamma=GAMMA)
+    initCarNum = 10
+    initTaxiNum = 10
+    trafficCtrl = TrafficController(env, initCarNum, initTaxiNum)
 
     # For debugging usage. If debugging mode is turned on, then it will not
     if DEBUG:
-        runExp()
+        # runExp()
+        trafficCtrl.run()
+
 
     # Traffic simulator thread
-    simulation = threading.Thread(target=runExp)
+    simulation = threading.Thread(target=trafficCtrl.run)
     simulation.start()
 
     # Plot the animated map

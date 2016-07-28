@@ -38,10 +38,12 @@ class AnimatedMap(threading.Thread):
         # self.calledTaxiPoints, = ax.plot([], [], 'ro', ms=5)
         # goalLng, goalLat = self.realMap.getGoalPosition()
         # self.goalPoint, = ax.plot([goalLng], [goalLat], 'r*', ms=10)
+        print "plotting animated map"
         self.cnt = 0
         board = self.realMap.getBoard()  #[top, bot, right, left]
         latDiff = board[0] - board[1]
         lngDiff = board[2] - board[3]
+        self.goalLng, self.goalLat = None, None
 
         def init():
             """
@@ -65,8 +67,8 @@ class AnimatedMap(threading.Thread):
             self.carPoints, = ax.plot([], [], 'bo', ms=4)
             self.taxiPoints, = ax.plot([], [], 'yo', ms=4)
             self.calledTaxiPoints, = ax.plot([], [], 'ro', ms=5)
-            goalLng, goalLat = self.realMap.getGoalPosition()
-            self.goalPoint, = ax.plot([goalLng], [goalLat], 'r*', ms=9)
+            # goalLng, goalLat = self.realMap.getGoalPosition()
+            # self.goalPoint, = ax.plot([goalLng], [goalLat], 'r*', ms=9)
             self.realMap.setAniMapPlotOk(True)
 
         def animate(i):
@@ -74,6 +76,12 @@ class AnimatedMap(threading.Thread):
             The method is called repeatedly to draw the animation.
             """
             # print "animate", i
+            if not self.goalLng:
+                goalGeo = self.realMap.getGoalPosition()
+                if goalGeo:
+                    self.goalLng, self.goalLat = goalGeo
+                    self.goalPoint, = ax.plot([self.goalLng], [self.goalLat], 'r*', ms=9)
+
             cars = []
             taxis = []
             if self.realMap.checkReset():
@@ -89,7 +97,7 @@ class AnimatedMap(threading.Thread):
             self.taxiPoints.set_data([taxi.getCoords()[0] for taxi in taxis if not taxi.called], [taxi.getCoords()[1] for taxi in taxis if not taxi.called])
             # self.changedSignals.set_data([coor[0] for coor in self.realMap.changedSignal], [coor[1] for coor in self.realMap.changedSignal])
 
-        ani = animation.FuncAnimation(fig, animate, init_func=init, interval=100, blit=False)
+        ani = animation.FuncAnimation(fig, animate, init_func=init, interval=30, blit=False)
         plt.show()
 
 

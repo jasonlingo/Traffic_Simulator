@@ -25,7 +25,7 @@ class Road(object):
         self.target = target
 
         self.top, self.bottom, self.right, self.left = self.parseCorners(corners)
-        self.defaultSpeed = speed
+        self.speedLimit = speed
         self.avgSpeed = 0
         self.recentSpeedList = []
         self.id = Traffic.uniqueId(RoadType.ROAD)
@@ -63,8 +63,11 @@ class Road(object):
         for lane in self.lanes:
             carPosition.extend(lane.carsPosition.values())
         cars = [cp.car for cp in carPosition if cp.car is not None]
-        avgSpeed = sum([car.speed for car in cars]) / len(cars) if len(cars) > 0 else self.defaultSpeed
+        avgSpeed = sum([car.speed for car in cars]) / len(cars) if len(cars) > 0 else self.speedLimit
         return avgSpeed
+
+    def getSpeedLimit(self):
+        return self.speedLimit
 
     def updateAvgSpeed(self):
         """

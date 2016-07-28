@@ -21,10 +21,10 @@ MAX_SPEED = 60.0
 MAX_ROAD_LANE_NUM = 2
 """Maximum number of lanes per road"""
 
-CLOSE_CRASH_LANE = True
+CLOSE_CRASH_LANE = False
 """block the lane where a crash happens"""
 
-CLOSE_ALL_CRASH_LANES = True
+CLOSE_ALL_CRASH_LANES = False
 """block all the lanes of a road that a crash happens"""
 
 ANIMATION_LAPSE = 100
@@ -32,3 +32,7 @@ ANIMATION_LAPSE = 100
 
 CAR_LENGTH = 0.0045
 """The length (in km) of a car"""
+
+
+POI_LAMBDA = 0.1
+"""lambda parameter for poisson arrival for the new car comes into the map"""

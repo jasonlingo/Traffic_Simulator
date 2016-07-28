@@ -28,6 +28,7 @@ class Car(object):
         self.alive = True
         self.preferedLane = None
         self.isTaxi = False
+        self.crashed = False
 
     def __eq__(self, other):
         if not other:
@@ -57,13 +58,22 @@ class Car(object):
         """
         return self.trajectory.current
 
+    def setCrash(self, bool):
+        self.crashed = bool
+        if self.crashed:
+            self.speed = 0
+
     def setSpeed(self, speed):
         """
         Set the current speed of this car to the given speed parameter.
-        The speed should be between 0 ~ max.
+        The speed cannot exceed the maximum speed of this car and the
+        speed limit of the road.
         :param speed: the new speed
         """
+        # speed cannot exceeds the maximum speed that this car can drive
         self.speed = min(self.maxSpeed, max(round(speed, 10), 0))
+        # speed cannot exceeds the road speed limit
+        self.speed = min(self.speed, self.trajectory.getRoad().getSpeedLimit())
 
     # def getDirection(self):
     #     """
@@ -89,8 +99,8 @@ class Car(object):
 
         nextCar, nextDistance = self.trajectory.nextCarDistance()
         distanceToNextCar = max(nextDistance, 0)
-        deltaSpeed = self.speed - (nextCar.speed if nextCar is not None else 0) # TODO: check
-        speedRatio = (self.speed / self.maxSpeed)
+        deltaSpeed = self.speed - (nextCar.speed if nextCar is not None else 0)  # TODO: check
+        speedRatio = self.speed / self.maxSpeed
         freeRoadCoeff = pow(speedRatio, 4)
 
         timeGap = self.speed * TIME_HEAD_AWAY / 3600.0  # (km/h) * (second/3600)
@@ -122,6 +132,9 @@ class Car(object):
         to go straight, turn right, or left.
         :param second: the given time interval in second
         """
+        if self.crashed:  # crashed car cannot move
+            return
+
         acceleration = self.getAcceleration()
         self.setSpeed(self.speed + acceleration * second * 3600)
 
