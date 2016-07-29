@@ -8,13 +8,14 @@ class AnimatedMap(threading.Thread):
     A decoration class that draw a animated map based on a RealMap object.
     """
 
-    def __init__(self, realMap):
+    def __init__(self, realMap, env):
         """
         Draw a animated map that shows the movement of cars on the map.
         :param map: a map containing roads, intersection, and cars
-        :param plt: the pyplot object for drawing the map
+        :param env: environment object that controls the map
         """
         self.realMap = realMap
+        self.env = env
         self.roads = realMap.getRoads()
         self.intersections = realMap.getIntersections()
 
@@ -43,7 +44,7 @@ class AnimatedMap(threading.Thread):
         board = self.realMap.getBoard()  #[top, bot, right, left]
         latDiff = board[0] - board[1]
         lngDiff = board[2] - board[3]
-        self.goalLng, self.goalLat = None, None
+        self.printCrashCar = False
 
         def init():
             """
@@ -64,7 +65,9 @@ class AnimatedMap(threading.Thread):
                     print "a road is incomplete"
 
             # initialize markers for cars, taxis, and the goal location
-            self.carPoints, = ax.plot([], [], 'bo', ms=4)
+            self.rightLaneCarPoints, = ax.plot([], [], 'bo', ms=4)
+            self.leftLaneCarPoints,  = ax.plot([], [], 'ro', ms=4)
+
             self.taxiPoints, = ax.plot([], [], 'yo', ms=4)
             self.calledTaxiPoints, = ax.plot([], [], 'ro', ms=5)
             # goalLng, goalLat = self.realMap.getGoalPosition()
@@ -75,12 +78,16 @@ class AnimatedMap(threading.Thread):
             """
             The method is called repeatedly to draw the animation.
             """
-            # print "animate", i
-            if not self.goalLng:
-                goalGeo = self.realMap.getGoalPosition()
-                if goalGeo:
-                    self.goalLng, self.goalLat = goalGeo
-                    self.goalPoint, = ax.plot([self.goalLng], [self.goalLat], 'r*', ms=9)
+            if not self.printCrashCar:
+                crashedCar = self.env.getCrashedCar()
+                if crashedCar:
+                    lngs = []
+                    lats = []
+                    for car in crashedCar:
+                        coords = car.getCoords()
+                        lngs.append(coords[0])
+                        lats.append(coords[1])
+                    self.goalPoint, = ax.plot(lngs, lats, 'y*', ms=8)
 
             cars = []
             taxis = []
@@ -92,9 +99,28 @@ class AnimatedMap(threading.Thread):
             else:
                 cars = self.realMap.getCars().values()
                 taxis = self.realMap.getTaxis().values()
-            self.carPoints.set_data([car.getCoords()[0] for car in cars], [car.getCoords()[1] for car in cars])
-            self.calledTaxiPoints.set_data([taxi.getCoords()[0] for taxi in taxis if taxi.called], [taxi.getCoords()[1] for taxi in taxis if taxi.called])
-            self.taxiPoints.set_data([taxi.getCoords()[0] for taxi in taxis if not taxi.called], [taxi.getCoords()[1] for taxi in taxis if not taxi.called])
+
+            rightLaneCarLng = []
+            rightLaneCarLat = []
+            leftLaneCarLng  = []
+            leftLaneCarLat  = []
+            for car in cars:
+                coords = car.getCoords()
+                if car.isOnRightLane():
+                    rightLaneCarLng.append(coords[0])
+                    rightLaneCarLat.append(coords[1])
+                else:
+                    leftLaneCarLng.append(coords[0])
+                    leftLaneCarLat.append(coords[1])
+
+            # self.carPoints.set_data([car.getCoords()[0] for car in cars], [car.getCoords()[1] for car in cars])
+            self.rightLaneCarPoints.set_data(rightLaneCarLng, rightLaneCarLat)
+            self.leftLaneCarPoints.set_data(leftLaneCarLng, leftLaneCarLat)
+
+            self.calledTaxiPoints.set_data([taxi.getCoords()[0] for taxi in taxis if taxi.called],
+                                           [taxi.getCoords()[1] for taxi in taxis if taxi.called])
+            self.taxiPoints.set_data([taxi.getCoords()[0] for taxi in taxis if not taxi.called],
+                                     [taxi.getCoords()[1] for taxi in taxis if not taxi.called])
             # self.changedSignals.set_data([coor[0] for coor in self.realMap.changedSignal], [coor[1] for coor in self.realMap.changedSignal])
 
         ani = animation.FuncAnimation(fig, animate, init_func=init, interval=30, blit=False)

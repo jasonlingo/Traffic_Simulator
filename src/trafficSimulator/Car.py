@@ -6,6 +6,9 @@ from TrafficSettings import CAR_LENGTH
 import sys
 
 
+SECOND_PER_HOUR = 3600.0
+
+
 class Car(object):
     """
     A class that represents a car.
@@ -29,6 +32,7 @@ class Car(object):
         self.preferedLane = None
         self.isTaxi = False
         self.crashed = False
+        self.delete = False
 
     def __eq__(self, other):
         if not other:
@@ -99,11 +103,11 @@ class Car(object):
 
         nextCar, nextDistance = self.trajectory.nextCarDistance()
         distanceToNextCar = max(nextDistance, 0)
-        deltaSpeed = self.speed - (nextCar.speed if nextCar is not None else 0)  # TODO: check
+        deltaSpeed = (self.speed - nextCar.speed) if nextCar is not None else 0
         speedRatio = self.speed / self.maxSpeed
         freeRoadCoeff = pow(speedRatio, 4)
 
-        timeGap = self.speed * TIME_HEAD_AWAY / 3600.0  # (km/h) * (second/3600)
+        timeGap = self.speed * TIME_HEAD_AWAY / SECOND_PER_HOUR  # (km/h) * (second/3600)
         breakGap = self.speed * deltaSpeed / (2 * math.sqrt(MAX_ACCELERATION * MAX_DECELERATION))
         safeDistance = DIST_GAP + timeGap + breakGap
         if distanceToNextCar > 0:
@@ -115,7 +119,8 @@ class Car(object):
         safeIntersectionDist = 0.001 + timeGap + pow(self.speed, 2) / (2 * MAX_DECELERATION)
         distanceToStopLine = self.trajectory.distanceToStopLine()
         if distanceToStopLine > 0:
-            safeInterDistRatio = (safeIntersectionDist / float(distanceToStopLine if distanceToStopLine > 0 else 0.0001))
+            # safeInterDistRatio = (safeIntersectionDist / float(distanceToStopLine if distanceToStopLine > 0 else 0.0001))
+            safeInterDistRatio = safeIntersectionDist / float(distanceToStopLine)
             intersectionCoeff = pow(safeInterDistRatio, 2)
         else:
             intersectionCoeff = sys.maxint
@@ -136,7 +141,7 @@ class Car(object):
             return
 
         acceleration = self.getAcceleration()
-        self.setSpeed(self.speed + acceleration * second * 3600)
+        self.setSpeed(self.speed + acceleration * second * SECOND_PER_HOUR)
 
         # if (not self.trajectory.isChangingLanes) and self.nextLane:
         #     currentLane = self.trajectory.current.lane
@@ -148,29 +153,34 @@ class Car(object):
         if preferedLane != currentLane:
             self.trajectory.switchLane(preferedLane)
 
-        step = max(self.speed * second / 3600.0 + 0.5 * acceleration * math.pow(second, 2), 0)
+        step = max(self.speed * second / SECOND_PER_HOUR + 0.5 * acceleration * math.pow(second, 2), 0)
         nextCarDist = max(self.trajectory.nextCarDistance()[1], 0)
 
         step = min(nextCarDist, step)
         if self.trajectory.timeToMakeTurn(step):
             if self.nextLane is None:
                 self.pickNextLane()
+
+        if self.alive and self.trajectory.current.lane.road.getTarget().isSinkInter():
+            self.alive = False
+
         self.trajectory.moveForward(step)
 
     def getPreferedLane(self):
         """
-        Choose the faster lane of current road
+        Choose the faster lane of current road.
+        If the car is going to turn right, then choose the right most lane
         :param turnNumber:
         :param currentLane:
         :return:
         """
-        # TODO: now it only has at most 2 lanes of a road. when the number of lanes per road
-        # is large than 2, then the car can only change to the neighbor lanes.
-
         # current lane only has this car, no need to switch lane.
         if len(self.trajectory.current.lane.carsPosition) == 1:
             return self.trajectory.current.lane
         return self.trajectory.current.lane.road.getFastestLane()
+
+    def isOnRightLane(self):
+        return self.trajectory.current.lane.isRightLane()
 
     def pickNextRoad(self):
         """

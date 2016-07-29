@@ -33,12 +33,12 @@ if __name__ == '__main__':
         # experiment.showMap()
 
     # Create a RealMap object and pass it to a Environment object.
-    mapSize = 5000  # number of shapefile data to be read to construct the map
+    mapSize = 4500  # number of shapefile data to be read to construct the map
     realMap = RealMap(SHAPEFILE, mapSize)
     env = Environment(realMap)
     # exp = Experiment(env, TAXI_NUM, CAR_NUM, epsilon=EPSILON, alpha=ALPHA, gamma=GAMMA)
     initCarNum = 10
-    initTaxiNum = 10
+    initTaxiNum = 0
     trafficCtrl = TrafficController(env, initCarNum, initTaxiNum)
 
     # For debugging usage. If debugging mode is turned on, then it will not
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     # Plot the animated map
     fig, ax = plt.subplots(figsize=(10, 8))
     ax.set_aspect(1.0)
-    aniMap = AnimatedMap(realMap)
+    aniMap = AnimatedMap(realMap, env)
     aniMap.plotAnimatedMap(fig, ax)
 
     print "##### Experiments end #####"

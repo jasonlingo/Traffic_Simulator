@@ -34,6 +34,7 @@ class Environment(QLEnvironment):
         self.reachGoal = False
         self.cars = {}
         self.taxis = {}
+        self.crashedCars = set()
 
     def randomLocation(self):
         """
@@ -136,14 +137,18 @@ class Environment(QLEnvironment):
         self.realMap.addRandomCars(num, CarType.TAXI)
         self.taxis = self.realMap.getTaxis()
 
-    def addCarFromSource(self):
-        self.realMap.addCarFromSource()
+    def addCarFromSource(self, poissonLambda):
+        self.realMap.addCarFromSource(poissonLambda)
 
     def randomCarAccident(self):
         if not self.cars:
             return
-        else:
-            return random.choice(self.cars.values())
+        crashedCar = random.choice(self.cars.values())
+        self.crashedCars.add(crashedCar)
+        crashedCar.setCrash(True)
+
+    def getCrashedCar(self):
+        return self.crashedCars
 
     def cleanCars(self):
         self.realMap.cleanCars()

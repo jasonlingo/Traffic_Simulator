@@ -161,6 +161,10 @@ class Trajectory(object):
         self.current.position += distance
         self.next.position += distance
         if self.timeToMakeTurn() and self.canEnterIntersection() and self.isValidTurn():
+            if not self.car.alive:  # go to sink intersection
+                self.car.release()
+                self.car.delete = True
+
             self.startChangingLanes(self.car.popNextLane(), distance)
 
         # if self.temp.lane:
@@ -181,6 +185,7 @@ class Trajectory(object):
             self.car.pickNextLane()
 
     def changeLane(self, nextLane):
+        print "car %d is changing lane" % self.car.id
         if self.isChangingLanes:
             print "already changing lane"
             return
@@ -275,4 +280,3 @@ class Trajectory(object):
             self.current.release()
         if self.next:
             self.next.release()
-        # self.temp.release()

@@ -22,6 +22,7 @@ class Lane(object):
         # self.middleLine = None
         self.carsPosition = {}
         self.blocked = False
+        self.rightLane = None
 
         # self.update()
 
@@ -33,6 +34,15 @@ class Lane(object):
     #
     # def getSideId(self):
     #     roads = self.road
+
+    def checkRightLane(self):
+        if self == self.road.getLanes()[-1]:
+            self.rightLane = True
+
+    def isRightLane(self):
+        if self.rightLane is None:
+            self.checkRightLane()
+        return self.rightLane
 
     def getRoadId(self):
         return self.road.id
@@ -91,6 +101,11 @@ class Lane(object):
             print "car is already here"
         else:
             self.carsPosition[carPos.id] = carPos
+
+    # def isCarPositionEmpty(self, pos):            # TODO: check position is empty
+    #     for pos in self.carsPosition.values():
+    #         if
+
 
     def getCurAvgLaneSpeed(self):
         carsSpd = [pos.car.getSpeed() for pos in self.carsPosition.values()]

@@ -48,7 +48,7 @@ class RealMap(object):
         self.reset = False                # indicate whether it is in the middle (reset) of experiments
         self.locDict = defaultdict(list)  # recode which car is on which lane
         self.aniMapPlotOK = False         # indicate the map has been plotted
-        self.carRunsOk = False            # TODO: may not need this
+        # self.carRunsOk = False            # TODO: may not need this
 
     def createMap(self):
         """
@@ -186,6 +186,7 @@ class RealMap(object):
                 rd = tmp
         lane = random.choice(rd.getLanes())
         position = random.random() * lane.getLength()  # TODO: check no car at that position
+
         return lane, position
 
     def setRandomGoalPosition(self):  # TODO: consider move to Experiment or Environment
@@ -254,12 +255,16 @@ class RealMap(object):
                 lane = lanes[i]
                 addCar = True
                 for car in lane.getCars():
-                    if car.trajectory.getAbsolutePosition() < CAR_LENGTH / 2:
+                    if car.trajectory.getAbsolutePosition() < CAR_LENGTH:
+                        print "car is too close"
                         addCar = False
                         break
                 if addCar:
+                    print "add car"
                     newCar = Car(lane, 0)
                     self.cars[newCar.id] = newCar
+                else:
+                    print "not add car"
 
 
     # def addRandomTaxi(self, num):
@@ -308,11 +313,11 @@ class RealMap(object):
     def isAniMapPlotOk(self):
         return self.aniMapPlotOK
 
-    def setCarRunsOK(self, b):
-        self.carRunsOk = b
-
-    def isCarRunsOk(self):
-        return self.carRunsOk
+    # def setCarRunsOK(self, b):
+    #     self.carRunsOk = b
+    #
+    # def isCarRunsOk(self):
+    #     return self.carRunsOk
 
     def updateContralSignal(self, delta):
         for inter in self.intersections.values():

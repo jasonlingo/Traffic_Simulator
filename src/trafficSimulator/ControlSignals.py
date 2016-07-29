@@ -14,7 +14,6 @@ class ControlSignals(object):
         self.flipMultiplier = 2 + random.random() * 0.4 - 0.2
         self.flipInterval = self.flipMultiplier * LIGHT_FLIP_INTERVAL
         self.stateNum = 0
-        # TODO: make this for intersections that have more than 4 roads
         self.states = []
         self.inRoads = []
         self.pairNum = None  # the number of paired roads at this intersection.
@@ -153,7 +152,6 @@ class ControlSignals(object):
     #         self.generateState()
     #
     #     # if len(self.intersection.roads) <= 2:
-    #     #     # TODO: make this for intersections that have more than 4 roads
     #     #     stringState = ['LFR', 'LFR', 'LFR', 'LFR']
     #     # else:
     #     #     # stringState = self.states[self.stateNum % len(self.states)]
@@ -212,7 +210,6 @@ class ControlSignals(object):
         self.time += delta
         if self.time > self.flipInterval:
             self.flip()
-            # self.time -= self.
             self.time = 0
             return True
 
