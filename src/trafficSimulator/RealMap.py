@@ -5,7 +5,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import pygmaps
 import webbrowser
 import time
-from TrafficSettings import POI_LAMBDA
 from Shapefile import Shapefile
 from Road import Road
 from Car import *
@@ -13,8 +12,6 @@ from src.Dijkstra import *
 import numpy
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-
-
 
 
 class RealMap(object):
@@ -49,6 +46,7 @@ class RealMap(object):
         self.locDict = defaultdict(list)  # recode which car is on which lane
         self.aniMapPlotOK = False         # indicate the map has been plotted
         # self.carRunsOk = False            # TODO: may not need this
+        self.roadAvgSpeed = {}
 
     def createMap(self):
         """
@@ -220,6 +218,9 @@ class RealMap(object):
             car.release()
         self.cars = {}
 
+    def clearRoadAvgSpeed(self):
+        self.roadAvgSpeed.clear()
+
     def addRandomCars(self, num, carType):
         """
         Add num cars into the self.cars dictionary by their id. If an id already exists in the dictionary, then
@@ -262,10 +263,18 @@ class RealMap(object):
                 if addCar:
                     print "add car"
                     newCar = Car(lane, 0)
+                    # destination = self.randomDestination()
+                    # newCar.setDestination(destination)
                     self.cars[newCar.id] = newCar
                 else:
                     print "not add car"
 
+    def randomDestination(self):
+        """
+        Choose a random destination for a car.
+        """
+        # TODO
+        pass
 
     # def addRandomTaxi(self, num):
     #     """
@@ -405,6 +414,23 @@ class RealMap(object):
         goals = [destination.getTarget(), destination.getSource()]
         time = dijkstraTrafficTime(self, source.getTarget(), goals)
         return time
+
+    def getPathToDestination(self, source, destination):
+        """
+        Get the quickest path from the source to the destination by using a Dijkstra algorithm.
+
+        :param source:
+        :param destination:
+        :return: a list of roads
+        """
+        pass #TODO
+
+
+
+
+    # =========================================================================
+    # just for checking the map representation
+    # =========================================================================
 
     def plotMap(self):
         """

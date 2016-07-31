@@ -28,6 +28,12 @@ class LanePosition(object):
     def setLane(self, lane):
         self.lane = lane
 
+    def getRoad(self):
+        return self.lane.road
+
+    def getNextInter(self):
+        return self.lane.road.getTarget()
+
     def relativePosition(self):
         return self.position / self.lane.getLength()
 

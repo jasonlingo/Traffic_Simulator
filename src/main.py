@@ -13,19 +13,19 @@ if __name__ == '__main__':
 
     DEBUG = False
 
-    def runExp():
-        """
-        Perform the learning thread for EXP_NUM trials.
-        """
-
-        while not realMap.isAniMapPlotOk() and not DEBUG:
-            # wait until the map has been plotted
-            time.sleep(1)
-
-        for i in range(EXP_NUM):
-            print "========== " + str(i + 1) + "-th trial =========="
-            print "Goal locates at", exp.getGoalLocation().current.lane.road.id
-            exp.startLearning()
+    # def runExp():
+    #     """
+    #     Perform the learning thread for EXP_NUM trials.
+    #     """
+    #
+    #     while not realMap.isAniMapPlotOk() and not DEBUG:
+    #         # wait until the map has been plotted
+    #         time.sleep(1)
+    #
+    #     for i in range(EXP_NUM):
+    #         print "========== " + str(i + 1) + "-th trial =========="
+    #         print "Goal locates at", exp.getGoalLocation().current.lane.road.id
+    #         exp.startLearning()
 
         # Print the results ======
         # experiment.printQValue()

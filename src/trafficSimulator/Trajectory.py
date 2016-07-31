@@ -21,15 +21,9 @@ class Trajectory(object):
         self.car = car
         self.current = LanePosition(self.car, lane, position)
         self.current.acquire()
-
-        # self.next = LanePosition(self.car, lane, position)
         self.next = LanePosition(self.car)
-        # self.temp = LanePosition(self.car, lane, position)
-        # self.temp = LanePosition(self.car)
-
         self.isChangingLanes = False
         self.absolutePosition = None
-        # self.relativePosition = None
 
     def setGoal(self):
         self.current.setGoal()
@@ -161,7 +155,7 @@ class Trajectory(object):
         self.current.position += distance
         self.next.position += distance
         if self.timeToMakeTurn() and self.canEnterIntersection() and self.isValidTurn():
-            if not self.car.alive:  # go to sink intersection
+            if not self.car.alive:  # go to destination
                 self.car.release()
                 self.car.delete = True
 

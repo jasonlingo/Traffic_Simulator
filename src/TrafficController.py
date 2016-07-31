@@ -37,7 +37,8 @@ class TrafficController(object):
         accident = False
         deltaTime = 1
         while True:
-            # deltaTime = time.time() - preTime
+            # clear the cached average speed of roads in the previous loop.
+            self.env.realMap.clearRoadAvgSpeed()
 
             # make a random car crash
             if timeToAccident >= TIME_FOR_ACCIDENT and not accident:
