@@ -1,3 +1,4 @@
+from __future__ import division
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -53,7 +54,6 @@ class Trajectory(object):
         #     return self.temp.position
         # else:
         return self.current.position
-        # return self.current.position
 
     def getRelativePosition(self):
         return self.getAbsolutePosition() / self.current.lane.getLength()
@@ -206,7 +206,7 @@ class Trajectory(object):
         if self.current.lane.road != targetLane.road:
             print "not on the same road"
             return
-        if targetLane.canSwitchLane(self.current.position, self.car.length):
+        if targetLane.canSwitchLane(self.current.position):
             self.current.release()
             self.current.lane = targetLane
             self.current.acquire()

@@ -115,6 +115,17 @@ class Lane(object):
     #     for pos in self.carsPosition.values():
     #         if
 
+    def getFrontAvgSpeed(self, pos):
+        """
+        Get the average speed of cars in front of the given position.
+        :param pos: absolute position
+        :return: the average speed in front of the given position
+        """
+        frontCarSpeed = [cp.getCar().getSpeed() for cp in self.carsPosition.values()
+                                                if cp.getPosition() - cp.getCar().length / 2 > pos]
+        if not frontCarSpeed:
+            return sys.maxint
+        return sum(frontCarSpeed) / len(frontCarSpeed)
 
     def getCurAvgLaneSpeed(self):
         carsSpd = [pos.car.getSpeed() for pos in self.carsPosition.values()]
@@ -168,13 +179,14 @@ class Lane(object):
             return sys.maxint
         return sum([lanePos.car.getSpeed() for lanePos in self.carsPosition.values()]) / len(self.carsPosition)
 
-    def canSwitchLane(self, position, carLength):
+    def canSwitchLane(self, position):
         """
         Check there is enough room for the car on the neighbor lane to switch to this lane.
         :param position:
         :return: boolean
         """
-        carPositions = [(c.position - c.car.length / 2, c.position + c.car.length / 2) for c in self.carsPosition.values()]
+        carPositions = [(c.position - c.car.length / 2, c.position + c.car.length / 2)
+                        for c in self.carsPosition.values()]
         for rear, front in carPositions:
             if rear <= position <= front:
                 return False

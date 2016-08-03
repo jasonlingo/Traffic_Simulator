@@ -1,8 +1,8 @@
 from __future__ import division
-import math
 from Trajectory import Trajectory
 from Traffic import *
 from TrafficSettings import CAR_LENGTH
+import math
 import sys
 
 
@@ -17,7 +17,7 @@ class Car(object):
     def __init__(self, lane, position=0, maxSpeed=MAX_SPEED, carType="Car"):
         """
         :param lane: the lane that this car is moving on
-        :param position: the relative position of this car in the given lane
+        :param position: the absolute position of this car in the given lane
         :param maxSpeed: km/h
         :return:
         """
@@ -179,19 +179,19 @@ class Car(object):
         if self.crashed:  # crashed car cannot move
             return
 
-        acceleration = self.getAcceleration()
-        self.setSpeed(self.speed + acceleration * second * SECOND_PER_HOUR)
+        # choose a quicker lane
+        currentLane = self.trajectory.getLane()
+        preferedLane = self.getPreferedLane()
+        if preferedLane != currentLane:
+            self.trajectory.switchLane(preferedLane)
 
         # if (not self.trajectory.isChangingLanes) and self.nextLane:
         #     currentLane = self.trajectory.current.lane
         #     turnNumber = currentLane.getTurnDirection(self.nextLane)
 
-        # choose a quicker lane
-        currentLane = self.trajectory.current.lane
-        preferedLane = self.getPreferedLane()
-        if preferedLane != currentLane:
-            self.trajectory.switchLane(preferedLane)
-
+        # update speed and calculate moving distance
+        acceleration = self.getAcceleration()
+        self.setSpeed(self.speed + acceleration * second * SECOND_PER_HOUR)
         step = max(self.speed * second / SECOND_PER_HOUR + 0.5 * acceleration * math.pow(second, 2), 0)
         nextCarDist = max(self.trajectory.nextCarDistance()[1], 0)
         step = min(nextCarDist, step)
@@ -207,17 +207,24 @@ class Car(object):
     def getPreferedLane(self):
         """
         Choose the quicker lane of current road.
-        If the car is going to turn right, then choose the right most lane
-        :param turnNumber:
-        :param currentLane:
-        :return:
+        If the car is going to turn right, then choose the right-most lane
+        :return: Lane object
         """
-        # current lane only has this car, no need to switch lane.
-        if len(self.trajectory.current.lane.carsPosition) == 1:
-            return self.trajectory.current.lane
         # if this car is going to turn right, it must be on the right-most lane #TODO
 
-        return self.trajectory.current.lane.road.getFastestLane()
+        # current lane only has this car, no need to switch lane.
+        if len(self.trajectory.getLane().carsPosition) == 1:
+            return self.trajectory.getLane()
+
+        # if the quicker lane's speed is < current lane's speed * 1.2, then keep going on current lane
+        # only find the average speed of the front cars
+        fastLane, fastSpeed = \
+            self.trajectory.getRoad().getFastLaneBeforePos(self.trajectory.getAbsolutePosition() + self.length / 2)
+        if fastLane != self.trajectory.getLane() and \
+            fastSpeed >= self.trajectory.getLane().getFrontAvgSpeed(self.trajectory.getAbsolutePosition() + self.length / 2):  #
+            return fastLane
+
+        return self.trajectory.getLane()  # not change lane
 
     def reachedDestination(self):
         """
@@ -230,7 +237,7 @@ class Car(object):
 
 
     def isOnRightLane(self):
-        return self.trajectory.current.lane.isRightLane()
+        return self.trajectory.getLane().isRightLane()
 
     def pickNextRoad(self):
         """
@@ -241,7 +248,7 @@ class Car(object):
         :return: a randomly picked road.
         """
         intersection = self.trajectory.nextIntersection()
-        currentLane = self.trajectory.current.lane
+        currentLane = self.trajectory.getLane()
         possibleRoads = [road for road in intersection.outRoads
                          if road.target != currentLane.road.source and not road.isBlocked()]
         if not possibleRoads:

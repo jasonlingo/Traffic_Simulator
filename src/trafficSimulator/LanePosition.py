@@ -9,10 +9,15 @@ class LanePosition(object):
     """
 
     def __init__(self, car, lane=None, position=0):
+        """
+        :param car: Car object
+        :param lane: Lane object, this lane that the given car is moving on
+        :param position: The relative position (0~1) of this car on the lane
+        """
         self.car = car
         self.lane = lane
         self.position = position
-        self.id = Traffic.uniqueId("laneposition")
+        self.id = Traffic.uniqueId("lanePosition")
         self.free = True
         self.isGoalFlag = False
 
@@ -30,6 +35,9 @@ class LanePosition(object):
 
     def getRoad(self):
         return self.lane.road
+
+    def getCar(self):
+        return self.car
 
     def getNextInter(self):
         return self.lane.road.getTarget()

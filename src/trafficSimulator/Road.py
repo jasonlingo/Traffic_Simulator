@@ -163,6 +163,10 @@ class Road(object):
     def getLanes(self):
         return self.lanes
 
+    def getFastLaneBeforePos(self, pos):
+        return reduce(lambda a, b: a if a[1] > b[1] else b,
+                      [(lane, lane.getFrontAvgSpeed(pos)) for lane in self.lanes])
+
     def getFastestLane(self):
         candidateLanes = [lane for lane in self.lanes if not lane.isBlocked()]
         fastestSpeed = 0
