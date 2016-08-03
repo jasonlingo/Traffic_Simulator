@@ -51,27 +51,51 @@ class AnimatedMap(threading.Thread):
             The initialization step for drawing a animated map. This will be the base plot
             for the animation.
             """
-            print "init animation"
+            print "Init animation"
 
             # plot roads
             for rd in self.roads.values():
                 source = rd.getSource()
                 target = rd.getTarget()
                 if source and target:
-                    xs = [source.center.lng, target.center.lng]
-                    ys = [source.center.lat, target.center.lat]
-                    plt.plot(xs, ys, color='k')
+                    lngs = [source.center.lng, target.center.lng]
+                    lats = [source.center.lat, target.center.lat]
+                    plt.plot(lngs, lats, color='k')
                 else:
                     print "a road is incomplete"
 
-            # initialize markers for cars, taxis, and the goal location
+            # plot cars
             self.rightLaneCarPoints, = ax.plot([], [], 'bo', ms=4)
             self.leftLaneCarPoints,  = ax.plot([], [], 'ro', ms=4)
 
+            # plot taxis
             self.taxiPoints, = ax.plot([], [], 'yo', ms=4)
-            self.calledTaxiPoints, = ax.plot([], [], 'ro', ms=5)
+            self.calledTaxiPoints, = ax.plot([], [], 'ro', ms=4)
+
+            # plot goal location
             # goalLng, goalLat = self.realMap.getGoalPosition()
             # self.goalPoint, = ax.plot([goalLng], [goalLat], 'r*', ms=9)
+
+            # plot sink and source points
+
+            sinkLng = []
+            sinkLat = []
+            sourceLng = []
+            sourceLat = []
+            for p in self.realMap.getSink():
+                lng, lat = p.getCoords()
+                sinkLng.append(lng)
+                sinkLat.append(lat)
+            self.sinkPoint, = ax.plot(sinkLng, sinkLat, 'md', ms=2)
+
+            for p in self.realMap.getSource():
+                lng, lat = p.getCoords()
+                sourceLng.append(lng)
+                sourceLat.append(lat)
+            self.sourcePoint, = ax.plot(sourceLng, sourceLat, 'kD', ms=2)
+
+
+            # Notify other thread that the initialization has i
             self.realMap.setAniMapPlotOk(True)
 
         def animate(i):
@@ -93,8 +117,8 @@ class AnimatedMap(threading.Thread):
             taxis = []
             if self.realMap.checkReset():
                 self.carPoints.set_data([], [])
-                self.taxiPoints.set_data([], [])
-                self.calledTaxiPoints.set_data([], [])
+                # self.taxiPoints.set_data([], [])
+                # self.calledTaxiPoints.set_data([], [])
                 # self.changedSignals.set_data([], [])
             else:
                 cars = self.realMap.getCars().values()
@@ -121,7 +145,6 @@ class AnimatedMap(threading.Thread):
                                            [taxi.getCoords()[1] for taxi in taxis if taxi.called])
             self.taxiPoints.set_data([taxi.getCoords()[0] for taxi in taxis if not taxi.called],
                                      [taxi.getCoords()[1] for taxi in taxis if not taxi.called])
-            # self.changedSignals.set_data([coor[0] for coor in self.realMap.changedSignal], [coor[1] for coor in self.realMap.changedSignal])
 
         ani = animation.FuncAnimation(fig, animate, init_func=init, interval=30, blit=False)
         plt.show()

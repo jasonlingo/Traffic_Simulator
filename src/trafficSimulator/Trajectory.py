@@ -56,13 +56,7 @@ class Trajectory(object):
         # return self.current.position
 
     def getRelativePosition(self):
-        # if self.temp.lane:
-        #     return self.getAbsolutePosition() / self.temp.lane.length
-        # else:
         return self.getAbsolutePosition() / self.current.lane.getLength()
-
-        # return self.getAbsolutePosition() / (float(self.temp.lane.length) if self.temp.lane else float(self.current.lane.length)
-        # return self.current.position
 
     # def getDirection(self):
     #     # if self.temp.lane:
@@ -166,7 +160,7 @@ class Trajectory(object):
         # else:
         #     tempRelativePosition = 0
 
-        gap = 2.0 * self.car.length  # TODO: why need double the length of the car
+        gap = 2.0 * self.car.length
         # if self.isChangingLanes and self.temp.position > gap and not self.current.free: #fixme
         if self.isChangingLanes and not self.current.free:
             self.current.release()
@@ -216,8 +210,6 @@ class Trajectory(object):
             self.current.release()
             self.current.lane = targetLane
             self.current.acquire()
-
-
 
     # def getIntersectionLaneChangeCurve(self):
     #     return

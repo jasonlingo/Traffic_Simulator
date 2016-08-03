@@ -46,7 +46,6 @@ if __name__ == '__main__':
         # runExp()
         trafficCtrl.run()
 
-
     # Traffic simulator thread
     simulation = threading.Thread(target=trafficCtrl.run)
     simulation.start()

@@ -28,7 +28,7 @@ class TrafficController(object):
         3. Make a random car crash. Stop the car by setting it speed to 0 and mark it as crashed.
         4. Change the traffic lights.
         """
-        print "Traffic controler is running..."
+        print "Traffic controller is running..."
 
         self.env.setResetFlag(False)
         timeToAccident = 0

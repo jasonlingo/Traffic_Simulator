@@ -21,38 +21,32 @@ class Car(object):
         :param maxSpeed: km/h
         :return:
         """
-        # the id for this car
-        self.id = Traffic.uniqueId(carType)
+        # ====================================================================
+        # basic information and states for this car
+        # ====================================================================
+        self.id = Traffic.uniqueId(carType)                 # the id for this car
+        self.isTaxi = False                                 # indicate this car is a general car or a taxi
+        self.alive = True                                   # when this car is going to reach the sink place
+                                                            # (or its destination), self.alive = False
+        self.delete = False                                 # indicate this car can be deleted
+        self.crashed = False                                # indicate this car is crashed or not
 
-        # initial speed
-        self.speed = 0
-        # the maximum speed this car can be drove
-        self.maxSpeed = maxSpeed
-        # the length (km) of this car
-        self.length = CAR_LENGTH
-        # manage the moving trajectory of this car
-        self.trajectory = Trajectory(self, lane, position)
-        # the next lane this can is going to
-        self.nextLane = None
-        # the lane that this car is going to switch
-        self.preferedLane = None
+        # ====================================================================
+        # variables for driving this car
+        # ====================================================================
+        self.speed = 0                                      # initial speed
+        self.maxSpeed = maxSpeed                            # the maximum speed this car can be drove
+        self.length = CAR_LENGTH                            # the length (km) of this car
+        self.trajectory = Trajectory(self, lane, position)  # manage the moving trajectory of this car
+        self.nextLane = None                                # the next lane this can is going to
+        self.preferedLane = None                            # the lane that this car is going to switch
 
-        # when this car is going to reach the sink place (or its destination), self.alive = False
-        self.alive = True
-        # indicate this car can be deleted
-        self.delete = False
-        # indicate this car is crashed or not
-        self.crashed = False
-
-        # indicate this car is a general car or a taxi
-        self.isTaxi = False
-
-        # the destination for this car
-        self.destination = None
-        # the path to the destination
-        self.path = None
-        # the last time to set the path
-        self.pathSetTime = None
+        # ====================================================================
+        # the destination and route for this care
+        # ====================================================================
+        self.destination = None                             # the destination for this car
+        self.route = None                                   # the path to the destination
+        self.routeSetTime = None                            # the last time to set the path
 
     def __eq__(self, other):
         if not other:
@@ -63,11 +57,15 @@ class Car(object):
         return hash(self.id)
 
     def setDestination(self, destination):
+        """
+        Set the destination for this car.
+        :param destination: SinkSource object
+        """
         self.destination = destination
 
-    def setPath(self, path, setTime):
-        self.path = path
-        self.pathSetTime = setTime
+    def setRoute(self, route, setTime):
+        self.route = route
+        self.routeSetTime = setTime
 
     def getCoords(self):
         """
@@ -208,7 +206,7 @@ class Car(object):
 
     def getPreferedLane(self):
         """
-        Choose the faster lane of current road.
+        Choose the quicker lane of current road.
         If the car is going to turn right, then choose the right most lane
         :param turnNumber:
         :param currentLane:

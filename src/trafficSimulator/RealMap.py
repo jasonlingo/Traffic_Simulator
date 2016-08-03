@@ -9,9 +9,22 @@ from Shapefile import Shapefile
 from Road import Road
 from Car import *
 from src.Dijkstra import *
+from SinkSource import SinkSource
 import numpy
+import random
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+
+
+# probabilities for a intersection to be a sink or source places
+SINK_PROB = 0.15
+SOURCE_PROB = 0.15
+SINK_SOURCE_PROB = 0.2
+
+# minimal road length (km) for a sink or source point
+MIN_SINK_SOURCE_ROAD_LENGTH = 0.2
+ROAD_OFFSET_FOR_SINK_SOURCE_POINT = 0.1
+
 
 
 class RealMap(object):
@@ -26,19 +39,23 @@ class RealMap(object):
         3. Create a map by connecting roads with intersections.
         4. Randomly initialize a goal position
 
-        :param shapefileName: the file name of the given shapefile
+        :param shapefileName: the file name of the given shape file.
+        :param dataNum: the number of shape file records to be read.
         """
-
-        self.she = Shapefile(shapefileName, dataNum)  # parse shapefile
+        self.she = Shapefile(shapefileName, dataNum)  # parse shape file
         self.roads = {}
         self.intersections = {}
-        self.sinkSource = []              # sink and source intersections that cars come out and disappear
-        self.createMap()
+
+        # self.sinkSource = set()           # the places that can be both sink and source places for adding and deleting cars
+        self.sink = set()                 # the places that can only be sink places for deleting cars
+        self.source = set()               # the places that can only be source places for adding cars
+
+        self.createMap()                  # create the map by connecting the intersection and roads
 
         self.board = self.she.getBoard()  # [top, bot, right, left] of the borders of this map
 
         self.goalLocation = None          # the car crash's location
-        # self.setRandomGoalPosition()
+        # self.setRandomGoalPosition()    # disable for current version
 
         self.cars = {}                    # store all cars' id and instance
         self.taxis = {}                   # store all taxis' id and instance
@@ -46,13 +63,105 @@ class RealMap(object):
         self.locDict = defaultdict(list)  # recode which car is on which lane
         self.aniMapPlotOK = False         # indicate the map has been plotted
         # self.carRunsOk = False            # TODO: may not need this
-        self.roadAvgSpeed = {}
+        self.roadAvgSpeed = {}            # the cache for the average speed of each road
+
+    # ========================================================================
+    # Get and set methods
+    # ========================================================================
+    def getRoads(self):
+        if not self.roads:
+            self.createMap()
+        return self.roads
+
+    def getIntersections(self):
+        if not self.intersections:
+            self.createMap()
+        return self.intersections
+
+    def getBoard(self):
+        return self.board
+
+    def setRandomGoalPosition(self):  # TODO: consider move to Experiment or Environment
+        """
+        Assign the goal location.
+        :return:
+        """
+        lane, position = self.randomLaneLocation()
+        goalCar = Car(lane, position)
+        self.goalLocation = Trajectory(goalCar, lane, position)
+        self.goalLocation.setGoal()
+        return self.goalLocation
+
+    def getGoalPosition(self):
+        if self.goalLocation:
+            return self.goalLocation.getCoords()
+        return None
+
+    def getGoalLanePosition(self):
+        return self.goalLocation
+
+    def getRoadsBetweenIntersections(self, source, target):
+        """
+        Find the roads that connect the two given intersections:
+        :param source: intersection
+        :param target: intersection
+        :return: a list of roads
+        """
+        roads = []
+        for road in source.getOutRoads() + target.getOutRoads():
+            if road.getTarget() == target and road.getSource() == source:
+                roads.append(road)
+            elif road.getSource() == target and road.getTarget() == source:
+                roads.append(road)
+        return roads
+
+    def getCars(self):
+        return self.cars
+
+    def getTaxis(self):
+        return self.taxis
+
+    def setResetFlag(self, b):
+        self.reset = b
+        self.locDict = defaultdict(list)
+
+    def setAniMapPlotOk(self, b):
+        self.aniMapPlotOK = b
+
+    def isAniMapPlotOk(self):
+        return self.aniMapPlotOK
+
+    def getSink(self):
+        return self.sink
+
+    def getSource(self):
+        return self.source
+
+    @classmethod
+    def getAction(cls, pos):
+        """
+        Find the available actions (turns) for the given LanePostion object.
+        :param pos (Road): given location
+        :return: list of action (Road)
+        """
+        targetInter = pos.getTarget()
+        sourceInter = pos.getSource()
+        roads = [road for road in targetInter.getOutRoads() if road.getTarget() != sourceInter]
+        if roads:
+            return roads
+        else:
+            return targetInter.getOutRoads()
+
+
+    # ========================================================================
+    # other methods
+    # ========================================================================
 
     def createMap(self):
         """
         Connect intersections with roads. Assume every road has two directions.
         """
-        print "creating map"
+        print "Creating map"
 
         i = 0
         start_time = time.time()  # for computing the execution time
@@ -91,22 +200,31 @@ class RealMap(object):
                     continue
                 self.intersections[inter.id] = inter
 
-
-        # add control signal on each intersection
-        # find the sink-source intersections
-        for inter in self.intersections.values():
-            inter.buildControlSignal()
-            if len(inter.getInRoads()) == 1:
-                self.sinkSource.append(inter)
-
-        # examine map
         print ""
         print "total road:", len(self.roads), "; total intersection:", len(self.intersections)
-        print "checking map"
 
-        # removing unwanted roads and intersections
-        # remove intersections that have not connected to any road
-        # remove roads that have not connected to any intersection
+        self.buildTrafficLight()
+        self.createSinkSourcePlace()
+        self.examineMap()
+
+        print "Using", (time.time() - start_time), "seconds"
+
+    def buildTrafficLight(self):
+        """
+        add control signal on each intersection
+        """
+        for inter in self.intersections.values():
+            inter.buildControlSignal()
+
+    def examineMap(self):
+        """
+        Examine the map. Check each road has connected to intersections.
+        """
+        print "Checking map"
+
+        # removing unwanted roads and intersections:
+        # (1) remove intersections that have not connected to any road
+        # (2) remove roads that have not connected to any intersection
         removeRoads = []
         removeInters = []
         for inter in self.intersections.values():
@@ -117,32 +235,17 @@ class RealMap(object):
             if not rd.getSource() or not rd.getTarget() or not rd.lanes:
                 removeRoads.append(rd)
 
-        print "remove", len(removeRoads), "roads and", len(removeInters), "intersections"
+        if len(removeRoads) > 0 or len(removeInters) > 0:
+            print "remove", len(removeRoads), "roads and", len(removeInters), "intersections"
 
         for inter in removeInters:
             del self.intersections[inter.id]
         for rd in removeRoads:
             del self.roads[rd.id]
-
-
-        # =====================================================================
-        # checking map
-        # =====================================================================
-        for road in self.roads.values():
-            if not road.getTarget() or not road.getSource():
-                print "Err: incomplete road"
-            if not road.lanes:
-                print "Err: no lane on a road"
-        for inter in self.intersections.values():
-            roadNum = len(inter.getOutRoads())
-            if roadNum == 0:
-                print "Err: intersection has no road"
-            for rd in inter.getOutRoads():
-                if not rd.lanes:
-                    print "Err: road", rd.id, "has no lane"
+        del removeInters
+        del removeRoads
 
         allInter = [inter.id for inter in self.intersections.values()]
-
         for road in self.roads.values():
             if road.target.id not in allInter:
                 print "Err: target intersection not found"
@@ -154,22 +257,78 @@ class RealMap(object):
                 print road.source.getOutRoads()
                 print road.source.getInRoads()
                 self.intersections[road.source.id] = road.source
+        del allInter
 
-        print "checking ended"
-        print "using", (time.time() - start_time), "seconds"
+        print "Checking ended"
 
-    def getRoads(self):
-        if not self.roads:
-            self.createMap()
-        return self.roads
+    def createSinkSourcePlace(self):
+        """
+        Create sink and source place for the car to show up and disappear.
+        Every intersection can be a sink and source place.
+        For a region surrounded by roads, randomly pick one point on the edges as the
+        sink and source place for the region.
+        :return:
+        """
+        if not self.sink or not self.source:
+            self.sink = set()
+            self.source = set()
+            # self.sinkSource = set()
+            self.assignSinkSourceOnIntersection()
+            self.assignSinkSourceOnRoad()
+        print "%d sinks" % len(self.sink)
+        print "%d sources" % len(self.source)
 
-    def getIntersections(self):
+    def assignSinkSourceOnIntersection(self):
+        """
+        For those intersections that have only one out road, mark them both
+        sink and source points.
+        for other intersections, assign a sink or source point, or both to them according
+        to the random probabilities.
+        """
+        for inter in self.intersections.values():
+            point = SinkSource(inter)
+            if len(inter.getInRoads()) == 1:
+                self.sink.add(point)
+                self.source.add(point)
+            # else:
+            #     rand = random.random()
+            #     if rand < SINK_PROB:
+            #         self.sink.add(point)
+            #     elif rand < SINK_PROB + SOURCE_PROB:
+            #         self.source.add(point)
+            #     elif rand < SINK_PROB + SOURCE_PROB + SINK_SOURCE_PROB:
+            #         self.sink.add(point)
+            #         self.source.add(point)
+
+    def assignSinkSourceOnRoad(self):
+        """
+        For each surrounded region, add one sink and source point on one of the roads
+        that encloses the region.
+        Randomly pick a intersection and sse BFS method to expand the search. When encounter
+        a visited road, then add a sink-source point to the road.
+        """
         if not self.intersections:
-            self.createMap()
-        return self.intersections
+            return
+        visited = set()
+        queue = []
 
-    def getBoard(self):
-        return self.board
+        start = self.intersections[random.choice(self.intersections.keys())]
+        visited.add(start.id)
+        queue.append(start)
+        while queue:
+            currInter = queue.pop(0)
+            for road in currInter.getOutRoads():
+                nextInter = road.getTarget()
+                if nextInter.id in visited:
+                    if road.getLength() >= MIN_SINK_SOURCE_ROAD_LENGTH:
+                        position = ROAD_OFFSET_FOR_SINK_SOURCE_POINT + \
+                                   random.random() * (1 - 2 * ROAD_OFFSET_FOR_SINK_SOURCE_POINT)
+                        point = SinkSource(None, road, position)
+                        self.sink.add(point)
+                        self.source.add(point)
+                else:
+                    visited.add(nextInter.id)
+                    queue.append(nextInter)
 
     def randomLaneLocation(self):
         """
@@ -186,27 +345,6 @@ class RealMap(object):
         position = random.random() * lane.getLength()  # TODO: check no car at that position
 
         return lane, position
-
-    def setRandomGoalPosition(self):  # TODO: consider move to Experiment or Environment
-        """
-        Assign the goal location.
-        :param loc:
-        :return:
-        """
-        lane, position = self.randomLaneLocation()
-        # lane.road.setAvgSpeed(20)  # FIXME: reduce the speed of the road on which a car accident is located
-        goalCar = Car(lane, position)
-        self.goalLocation = Trajectory(goalCar, lane, position)
-        self.goalLocation.setGoal()
-        return self.goalLocation
-
-    def getGoalPosition(self):
-        if self.goalLocation:
-            return self.goalLocation.getCoords()
-        return None
-
-    def getGoalLanePosition(self):
-        return self.goalLocation
 
     def cleanTaxis(self):
         for taxi in self.taxis.values():
@@ -235,7 +373,7 @@ class RealMap(object):
             carList = self.taxis
             carType = Taxi
         else:
-            sys.stderr.write("RealMap: car type error:", carType)
+            sys.stderr.write("RealMap: car type error: %s" % carType)
             sys.exit(1)
 
         while len(carList) < num:
@@ -246,47 +384,54 @@ class RealMap(object):
 
     def addCarFromSource(self, pos_lambda):
         """
-        For each sink-source intersection, get a number of new cars according to the poisson arrival process.
-        chose one lane from the out road of the intersection and add a car if there is not car at the position.
+        For each sink-source intersection, get a number of new cars according to
+        the poisson arrival process. Choose one lane from the out road of the
+        intersection and add a car if there is not car at the position.
         """
-        for inter in self.sinkSource:
-            lanes = inter.getOutRoads()[0].getLanes()  # there is only one out car for each sink-source intersection
-            numCar = numpy.random.poisson(pos_lambda)
-            for i in range(min(len(lanes), numCar)):
-                lane = lanes[i]
-                addCar = True
-                for car in lane.getCars():
-                    if car.trajectory.getAbsolutePosition() < CAR_LENGTH:
-                        print "car is too close"
-                        addCar = False
-                        break
-                if addCar:
-                    print "add car"
-                    newCar = Car(lane, 0)
-                    # destination = self.randomDestination()
-                    # newCar.setDestination(destination)
-                    self.cars[newCar.id] = newCar
-                else:
-                    print "not add car"
-
-    def randomDestination(self):
-        """
-        Choose a random destination for a car.
-        """
-        # TODO
-        pass
-
-    # def addRandomTaxi(self, num):
-    #     """
-    #     Add num taxis into the self.taxis dictionary by their id. If an id already exists in the dictionary, then
-    #     update the dictionary with this taxi.
-    #     :param num: the total number of taxis to be added into the dictionary
-    #     """
-    #     while len(self.taxis) < num:
-    #         lane, position = self.randomLaneLocation()
-    #         if self.checkOverlap(lane, position):
-    #             taxi = Taxi(lane, position)
-    #             self.taxis[taxi.id] = taxi
+        for s in self.source:
+            numCar = numpy.random.poisson(pos_lambda)  # number of cars to be added at this source point
+            if numCar == 0:
+                continue
+            addedCar = 0
+            if s.isIntersection():  # may have multiple roads to choose from
+                inter = s.getIntersection()
+                for i in xrange(2 * numCar):  # try twice of the number of new cars since some picked lanes are filled with cars
+                    road = random.sample(inter.getOutRoads(), 1)[0]
+                    lane = random.sample(road.getLanes(), 1)[0]
+                    addCar = True
+                    for car in lane.getCars():
+                        if car.trajectory.getAbsolutePosition() < CAR_LENGTH:
+                            print "front car is too close to the new car"
+                            addCar = False
+                            break
+                    if addCar:
+                        addedCar += 1
+                        print "add a new car"
+                        destination = random.sample(self.sink, 1)[0]
+                        newCar = Car(lane, 0)
+                        newCar.setDestination(destination)
+                        self.cars[newCar.id] = newCar
+                        if addedCar == numCar:
+                            break
+            else:
+                road, pos = s.getRoadPos()
+                absolutePos = pos * road.getLength()
+                for lane in road.getLanes()[::-1]:  # when a car goes into the road, it probably is on the right-most lane
+                    addCar = True
+                    for car in lane.getCars():
+                        if absolutePos - CAR_LENGTH < car.trajectory.getAbsolutePosition() < absolutePos + CAR_LENGTH:
+                            print "front car is too close to the new car"
+                            addCar = False
+                            break
+                    if addCar:
+                        print "add a new car"
+                        addedCar += 1
+                        destination = random.sample(self.sink, 1)[0]
+                        newCar = Car(lane, pos)
+                        newCar.setDestination(destination)
+                        self.cars[newCar.id] = newCar
+                        if addedCar == numCar:
+                            break
 
     def checkOverlap(self, lane, position, carLength):
         """
@@ -297,53 +442,18 @@ class RealMap(object):
         :return: True if the car is not overlapped with existing cars; False otherwise
         """
         half = carLength / lane.getLength()
-        for (start, end) in self.locDict[lane]:
+        for start, end in self.locDict[lane]:
             if start <= position + half <= end or start <= position - half <= end:
                 return False
         self.locDict[lane].append((position - half, position + half))
         return True
 
-    def getCars(self):
-        return self.cars
-
-    def getTaxis(self):
-        return self.taxis
-
-    def setResetFlag(self, b):
-        self.reset = b
-        self.locDict = defaultdict(list)
-
     def checkReset(self):
         return self.reset
-
-    def setAniMapPlotOk(self, b):
-        self.aniMapPlotOK = b
-
-    def isAniMapPlotOk(self):
-        return self.aniMapPlotOK
-
-    # def setCarRunsOK(self, b):
-    #     self.carRunsOk = b
-    #
-    # def isCarRunsOk(self):
-    #     return self.carRunsOk
 
     def updateContralSignal(self, delta):
         for inter in self.intersections.values():
             inter.controlSignals.updateSignal(delta)
-
-    def getOppositeRoad(self, road):
-        """
-        Find the road with opposite direction of the given road
-        :param road: the given road
-        :return: the road with opposite direction
-        """
-        source = road.getSource()
-        target = road.getTarget()
-
-        for rd in target.getOutRoads():
-            if rd.getTarget.id == source.id:
-                return rd
 
     def neighbors(self, intersection):
         """
@@ -372,35 +482,6 @@ class RealMap(object):
         else:
             return sys.maxint
 
-    def getRoadsBetweenIntersections(self, source, target):
-        """
-        Find the roads that connect the two given intersections:
-        :param source: intersection
-        :param target: intersection
-        :return: a list of roads
-        """
-        roads = []
-        for road in source.getOutRoads() + target.getOutRoads():
-            if road.getTarget() == target and road.getSource() == source:
-                roads.append(road)
-            elif road.getSource() == target and road.getTarget() == source:
-                roads.append(road)
-        return roads
-
-    def getAction(self, pos):
-        """
-        Find the available actions (turns) for the given LanePostion object.
-        :param pos (Road): given location
-        :return: list of action (Road)
-        """
-        targetInter = pos.getTarget()
-        sourceInter = pos.getSource()
-        roads = [road for road in targetInter.getOutRoads() if road.getTarget() != sourceInter]
-        if roads:
-            return roads
-        else:
-            return targetInter.getOutRoads()
-
     def trafficTime(self, source, destination):
         """
         Calculate the time from the source location to the destination location considering the
@@ -425,13 +506,23 @@ class RealMap(object):
         """
         pass #TODO
 
+    @classmethod
+    def getOppositeRoad(cls, road):
+        """
+        Find the road with opposite direction of the given road
+        :param road: the given road
+        :return: the road with opposite direction
+        """
+        source = road.getSource()
+        target = road.getTarget()
 
-
+        for rd in target.getOutRoads():
+            if rd.getTarget.id == source.id:
+                return rd
 
     # =========================================================================
-    # just for checking the map representation
+    # Just for checking the map representation
     # =========================================================================
-
     def plotMap(self):
         """
         Plot the map according to the roads and intersections.

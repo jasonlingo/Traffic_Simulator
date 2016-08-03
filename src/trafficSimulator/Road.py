@@ -121,7 +121,6 @@ class Road(object):
         for lane in self.lanes:
             if not lane.isBlocked():
                 return False
-
         return True
 
     def leftMostLane(self):
@@ -132,15 +131,20 @@ class Road(object):
         if self.lanes:
             return self.lanes[-1]
 
-    # def setAvgSpeed(self, speed):
-    #     self.avgSpeed = speed
-
     def setSource(self, source):
+        """
+        Set the source intersection.
+        :param source: Intersection object
+        """
         self.source = source
         self.setLength()
         self.update()
 
     def setTarget(self, target):
+        """
+        Set the target intersection.
+        :param target: Intersection object
+        """
         self.target = target
         self.setLength()
         self.update()
@@ -161,9 +165,9 @@ class Road(object):
 
     def getFastestLane(self):
         candidateLanes = [lane for lane in self.lanes if not lane.isBlocked()]
-        fastestSpeed = candidateLanes[0].getAvgSpeed()
-        fastestLane = candidateLanes[0]
-        for lane in candidateLanes[1:]:
+        fastestSpeed = 0
+        fastestLane = None
+        for lane in candidateLanes:
             avgSpeed = lane.getAvgSpeed()
             if avgSpeed > fastestSpeed:
                 fastestSpeed = avgSpeed
@@ -251,3 +255,6 @@ class Road(object):
         #     self.lanes.append(Lane(self))
         while len(self.lanes) < MAX_ROAD_LANE_NUM:
             self.lanes.append(Lane(self))
+
+        for lane in self.lanes:
+            lane.laneIndex()  # find the index for each lane

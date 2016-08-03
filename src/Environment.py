@@ -9,6 +9,7 @@ from QLEnvironment import QLEnvironment
 from Settings import GOAL_REWARD
 from trafficSimulator.Car import Car
 from trafficSimulator.Traffic import CarType
+from trafficSimulator.RealMap import RealMap
 import random
 
 
@@ -77,7 +78,7 @@ class Environment(QLEnvironment):
         :param pos: LanePosition
         :return: a list of actions
         """
-        return self.realMap.getAction(pos)
+        return RealMap.getAction(pos)
 
     def getReward(self, pos, action):
         """

@@ -32,13 +32,19 @@ class Intersection(object):
             result.append(ird.update())
         return result
 
-    def isSinkInter(self):
-        if self.isSink is None:
-            self.isSink = len(self.outRoads) == 1
-        return self.isSink
+    # def isSinkInter(self):
+    #     if self.isSink is None:
+    #         self.isSink = len(self.outRoads) == 1
+    #     return self.isSink
 
     def getId(self):
         return self.id
+
+    def getCoords(self):
+        """
+        :return: longitude, latitude
+        """
+        return self.center.getCoords()
 
     def getOutRoads(self):
         return self.outRoads
