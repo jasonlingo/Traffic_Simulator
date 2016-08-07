@@ -1,5 +1,5 @@
 from __future__ import division
-from Traffic import Traffic, RoadType, calcVectAngle, haversine
+from TrafficUtil import Traffic, RoadType, calcVectAngle, haversine
 from Lane import Lane
 from TrafficSettings import MAX_ROAD_LANE_NUM
 import sys

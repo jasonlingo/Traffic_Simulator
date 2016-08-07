@@ -4,7 +4,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import pygmaps
 import webbrowser
-import time
 from Shapefile import Shapefile
 from Road import Road
 from Car import *
@@ -16,7 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 
-# probabilities for a intersection to be a sink or source places
+# probabilities for edge intersections to be a sink or source places
 SINK_PROB = 0.15
 SOURCE_PROB = 0.15
 SINK_SOURCE_PROB = 0.2
@@ -64,6 +63,7 @@ class RealMap(object):
         self.aniMapPlotOK = False         # indicate the map has been plotted
         # self.carRunsOk = False            # TODO: may not need this
         self.roadAvgSpeed = {}            # the cache for the average speed of each road
+        self.navigator = Navigator(self)  # navigator for cars
 
     # ========================================================================
     # Get and set methods
@@ -361,9 +361,13 @@ class RealMap(object):
 
     def addRandomCars(self, num, carType):
         """
-        Add num cars into the self.cars dictionary by their id. If an id already exists in the dictionary, then
-        update the dictionary with the car.
+        Add num cars into the self.cars dictionary by their id. If an id
+        already exists in the dictionary, then update the dictionary with
+        the car.
+        For each car, also add a destination for it.
+
         :param num: the total number of cars to be added into the dictionary
+        :param carType: the type of car (taxi or car) to be added
         """
         print "realmap add " + carType
         if carType == CarType.CAR:
@@ -380,6 +384,8 @@ class RealMap(object):
             lane, position = self.randomLaneLocation()
             car = carType(lane, position)
             if self.checkOverlap(lane, position, car.length):
+                car.destination = sampleOne(self.sink)
+                car.navigator = self.navigator
                 carList[car.id] = car
 
     def addCarFromSource(self, pos_lambda):
@@ -395,9 +401,9 @@ class RealMap(object):
             addedCar = 0
             if s.isIntersection():  # may have multiple roads to choose from
                 inter = s.getIntersection()
-                for i in xrange(2 * numCar):  # try twice of the number of new cars since some picked lanes are filled with cars
-                    road = random.sample(inter.getOutRoads(), 1)[0]
-                    lane = random.sample(road.getLanes(), 1)[0]
+                for i in range(2 * numCar):  # try twice of the number of new cars since some picked lanes are filled with cars
+                    road = sampleOne(inter.getOutRoads())
+                    lane = sampleOne(road.getLanes())
                     addCar = True
                     for car in lane.getCars():
                         if car.trajectory.getAbsolutePosition() < CAR_LENGTH:
@@ -406,11 +412,12 @@ class RealMap(object):
                             break
                     if addCar:
                         addedCar += 1
-                        print "add a new car"
-                        destination = random.sample(self.sink, 1)[0]
+                        destination = sampleOne(self.sink)
                         newCar = Car(lane, 0)
                         newCar.setDestination(destination)
+                        newCar.navigator = self.navigator
                         self.cars[newCar.id] = newCar
+                        print "add a new car %s" % newCar.id
                         if addedCar == numCar:
                             break
             else:
@@ -424,12 +431,14 @@ class RealMap(object):
                             addCar = False
                             break
                     if addCar:
-                        print "add a new car"
                         addedCar += 1
-                        destination = random.sample(self.sink, 1)[0]
+                        destination = sampleOne(self.sink)
                         newCar = Car(lane, pos)
                         newCar.setDestination(destination)
+                        newCar.navigator = self.navigator
                         self.cars[newCar.id] = newCar
+                        newCar.destination = sampleOne(self.sink)
+                        print "add a new car %s" % newCar.id
                         if addedCar == numCar:
                             break
 
@@ -462,6 +471,23 @@ class RealMap(object):
         :return: a list of intersections
         """
         return [road.getTarget() for road in intersection.getOutRoads()]
+
+    def neighborAndTime(self, intersection):
+        """
+        Return a list of neighbor along with the time from the given intersection to
+        the neighbor intersections.
+        :param intersection: (Intersection)
+        :return: a list of tuple (time, neighbor intersection)
+        """
+        nbs = []
+        for road in intersection.getOutRoads():
+            if road not in self.roadAvgSpeed:
+                self.roadAvgSpeed[road] = road.getCurAvgSpeed()
+            # since the time only be used for comparison, no need to convert it to second
+            # currently it is calculated by distance (km) / speed (km/hour) = hour
+            time = (road.getLength() / float(self.roadAvgSpeed[road])) if self.roadAvgSpeed[road] > 0 else sys.maxint
+            nbs.append((time, road.getTarget()))
+        return nbs
 
     def cost(self, sourceIntersection, targetIntersection):
         """

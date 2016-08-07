@@ -4,7 +4,7 @@ import math
 from TrafficSettings import MAX_SPEED
 from Coordinate import Coordinate
 
-LANE_WIDTH = 0.0005  # latitude or longitude degree, it is about 5-meters long
+LANE_WIDTH = 0.005  # latitude or longitude degree, it is about 5-meters long
 
 
 class Lane(object):

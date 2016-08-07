@@ -1,5 +1,6 @@
 import time
-from trafficSimulator.Traffic import POI_LAMBDA
+from trafficSimulator.TrafficUtil import POI_LAMBDA
+from trafficSimulator.Navigation import Navigator
 
 
 class TrafficController(object):
@@ -41,8 +42,7 @@ class TrafficController(object):
             self.env.realMap.clearRoadAvgSpeed()
 
             # make a random car crash
-            if timeToAccident >= TIME_FOR_ACCIDENT and not accident:
-                print "car accident"
+            if not accident and timeToAccident >= TIME_FOR_ACCIDENT:
                 self.env.randomCarAccident()
                 accident = True
             if timeToAccident < TIME_FOR_ACCIDENT:
@@ -54,7 +54,7 @@ class TrafficController(object):
             # delete cars that is reach a sink intersection
             deletedCars = [car.id for car in self.cars.values() if car.delete]
             for carId in deletedCars:
-                print "delete car"
+                print "%s went to the sink point" % carId
                 del self.cars[carId]
 
             # make each car move

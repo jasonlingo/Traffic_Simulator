@@ -2,6 +2,7 @@ import random
 from math import radians, cos, sin, asin, sqrt, atan2, pi
 from TrafficSettings import *
 from collections import defaultdict
+from Coordinate import Coordinate
 
 
 class Traffic(object):
@@ -22,55 +23,15 @@ class CarType(object):
     CAR = "car"
     TAXI = "taxi"
 
-def sample(obj, n):
+
+def sampleOne(list):
     """
-    return a shuffled sub-list of objects
-    :param obj: the given list
-    :param n: the number of samples
-    :return: a list of random samples
+    randomly pick one element from the given list.
+    :param list:
+    :return: a randomly picked item
     """
-    return shuffle(obj)[:max(0, n)]
+    return random.sample(list, 1)[0]
 
-
-def shuffle(obj):
-    """
-    Shuffle a given list and return a shuffled list.
-    First create a copy of the original list in order
-    to prevent that the original list will be affected
-    by the shuffle operation.
-    :param obj: the given list
-    :return: a shuffled list
-    """
-    shuffled = obj[:]
-    random.shuffle(shuffled)
-    return shuffled
-
-
-def rand(min, max):
-    return random.choice([x for x in range(min, max+1)])
-
-# def each(obj, iterator, context):
-#     """
-#
-#     :param obj:
-#     :param iterator:
-#     :param context:
-#     :return:
-#     """
-#     if obj is None:
-#         return obj
-#
-#     if (nativeForEach && obj.forEach === nativeForEach):
-#         obj.forEach(iterator, context)
-#     else if (obj.length === +obj.length):
-#         for (var i = 0, length = obj.length; i < length; i++) {
-#            if (iterator.call(context, obj[i], i, obj) === breaker)
-#             return
-#     else:
-#         for i in range(len(obj)):
-#             if iterator.call(context, obj[keys[i]], keys[i], obj) == breaker:
-#                 return
-#     return obj
 
 def haversine(point1, point2):
     """
@@ -94,12 +55,38 @@ def haversine(point1, point2):
     a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlng / 2) ** 2
     c = 2 * asin(sqrt(a))
 
-    # The radius of earth in kilometers.
+    # The radius of earth in kilometers or miles.
     if METER_TYPE == "K":
         r = EARTH_RADIUS_KM    # The radius of earth in kilometers.
     else:
         r = EARTH_RADIUS_MILE  # The radius of earth in miles.
     return c * r
+
+
+# calculate the approximate GPS distance unit
+p1 = Coordinate(0.0, 1.0)
+p2 = Coordinate(0.0, 0.0)
+GPS_DIST_UNIT = haversine(p1, p2)
+
+
+def distToGPSDiff(length):
+    """
+    Invert length in kilometer to GPS unit. Use the haversine function.
+    :param km:
+    :return:
+    """
+    # The radius of earth in kilometers or miles.
+    # if METER_TYPE == "K":
+    #     r = EARTH_RADIUS_KM  # The radius of earth in kilometers.
+    # else:
+    #     r = EARTH_RADIUS_MILE  # The radius of earth in miles.
+    #
+    # c = km / r
+    # a = pow(sin(c / 2.0), 2)
+    # dlng = asin(a / 2.0)
+    #
+    # lng1, lat1, lng2, lat2 = map(radians, [lng1, lat1, lng2, lat2])
+    return length / GPS_DIST_UNIT
 
 
 def calcVectAngle(vec1, vec2):

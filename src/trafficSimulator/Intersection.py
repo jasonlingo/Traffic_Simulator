@@ -1,4 +1,4 @@
-from Traffic import *
+from TrafficUtil import *
 from ControlSignals import ControlSignals
 
 

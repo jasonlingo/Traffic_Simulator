@@ -2,7 +2,7 @@ import shapefile as shp
 import pygmaps
 import webbrowser
 import os
-from Traffic import RoadType
+from TrafficUtil import RoadType
 from Road import Road
 from Intersection import Intersection
 from Coordinate import Coordinate

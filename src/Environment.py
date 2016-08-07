@@ -4,13 +4,14 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import math
+import random
 from trafficSimulator.TrafficSettings import CLOSE_CRASH_LANE, CLOSE_ALL_CRASH_LANES
+from trafficSimulator.Navigation import Navigator
+from trafficSimulator.TrafficUtil import CarType
+from trafficSimulator.RealMap import RealMap
+from trafficSimulator.Car import Car
 from QLEnvironment import QLEnvironment
 from Settings import GOAL_REWARD
-from trafficSimulator.Car import Car
-from trafficSimulator.Traffic import CarType
-from trafficSimulator.RealMap import RealMap
-import random
 
 
 class Environment(QLEnvironment):
@@ -25,12 +26,12 @@ class Environment(QLEnvironment):
         :return:
         """
         self.realMap = realMap
-        # self.goalLocation = self.realMap.getGoalLanePosition()  # Trajectory object #TODO: turn off
+        # self.goalLocation = self.realMap.getGoalLanePosition()  # Trajectory object #TODO: currently turn off
 
         # block the goal road, only allow cars move out of the road
         self.block = None
-        if CLOSE_CRASH_LANE:
-            self.block = self.closeLane(self.goalLocation.current.lane)
+        # if CLOSE_CRASH_LANE:
+        #     self.block = self.closeLane(self.goalLocation.current.lane)
 
         self.reachGoal = False
         self.cars = {}
@@ -131,10 +132,18 @@ class Environment(QLEnvironment):
         return False
 
     def addRandomCars(self, num):
+        """
+        Add random cars to the map.
+        :param num: number of cars to be added.
+        """
         self.realMap.addRandomCars(num, CarType.CAR)
         self.cars = self.realMap.getCars()
 
     def addRandomTaxis(self, num):
+        """
+        Add random taxis to the map.
+        :param num: number of taxis to be added.
+        """
         self.realMap.addRandomCars(num, CarType.TAXI)
         self.taxis = self.realMap.getTaxis()
 
@@ -147,6 +156,7 @@ class Environment(QLEnvironment):
         crashedCar = random.choice(self.cars.values())
         self.crashedCars.add(crashedCar)
         crashedCar.setCrash(True)
+        print "Car accident!!! %s crashed" % crashedCar.id
 
     def getCrashedCar(self):
         return self.crashedCars

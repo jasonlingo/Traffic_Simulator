@@ -3,7 +3,7 @@ import random
 import numpy as np
 import sys
 import math
-from Traffic import Traffic
+from TrafficUtil import Traffic
 
 class ControlSignals(object):
 
@@ -65,7 +65,7 @@ class ControlSignals(object):
                 j += self.pairNum
             self.states.append(l)
             self.states.append(fr)
-        self.stateNum = random.choice([n for n in range(len(self.states))])
+        self.stateNum = random.randint(0, len(self.states))
 
     def getSlopeQuadrant(self, road):
         """
@@ -109,7 +109,9 @@ class ControlSignals(object):
 
     def getTurnNumber(self, lane, isInRoad):
         """
-        From the self.roads (which stores in-roads of the intersections), find the road number that the given lane belongs to.
+        From the self.roads (which stores in-roads of the intersections),
+        find the road number that the given lane belongs to.
+
         :param lane: the given lane to be checked
         :param isInRoad: indicates in-road (True) or out-road (False)
         :return: the order of the given lane in the self.roads
@@ -175,6 +177,7 @@ class ControlSignals(object):
 
         if len(self.inRoads) <= 2:
             return True
+
         sourceNum = self.getTurnNumber(sourceLane, True)
         nextNum = self.getTurnNumber(nextLane, False)
         permitEnter = self.states[self.stateNum][sourceNum]

@@ -1,18 +1,21 @@
 from __future__ import division
 from Trajectory import Trajectory
-from Traffic import *
+from TrafficUtil import *
 from TrafficSettings import CAR_LENGTH
+from Navigation import Navigator
 import math
+import time
 import sys
 
-
-SECOND_PER_HOUR = 3600.0
+UPDATE_ROUTE_TIME = 180 # second
 
 
 class Car(object):
     """
     A class that represents a car.
     """
+
+    SECOND_PER_HOUR = 3600.0
 
     def __init__(self, lane, position=0, maxSpeed=MAX_SPEED, carType="Car"):
         """
@@ -47,6 +50,7 @@ class Car(object):
         self.destination = None                             # the destination for this car
         self.route = None                                   # the path to the destination
         self.routeSetTime = None                            # the last time to set the path
+        self.navigator = None                               # Navigator object
 
     def __eq__(self, other):
         if not other:
@@ -62,10 +66,6 @@ class Car(object):
         :param destination: SinkSource object
         """
         self.destination = destination
-
-    def setRoute(self, route, setTime):
-        self.route = route
-        self.routeSetTime = setTime
 
     def getCoords(self):
         """
@@ -114,6 +114,13 @@ class Car(object):
     #     """
     #     return self.trajectory.direction  #FIXME: error attribute
 
+    def getNavigation(self):
+        """
+        Use Navigator to find the shortest route for this car to the destination.
+        """
+        self.route = self.navigator.navigate(self, self.trajectory.getRoad(), self.destination)
+        self.routeSetTime = time.time()
+
     def release(self):
         """
         delete this car's position from the lane
@@ -146,7 +153,7 @@ class Car(object):
         freeRoadCoeff = pow(speedRatio, 4)
 
         # calculate the busy road coefficient
-        timeGap = self.speed * TIME_HEAD_AWAY / SECOND_PER_HOUR  # (km/h) * (second/3600)
+        timeGap = self.speed * TIME_HEAD_AWAY / Car.SECOND_PER_HOUR  # (km/h) * (second/3600)
         breakGap = self.speed * deltaSpeed / (2 * math.sqrt(MAX_ACCELERATION * MAX_DECELERATION))
         safeDistance = DIST_GAP + timeGap + breakGap
         if distanceToNextCar > 0:
@@ -191,8 +198,8 @@ class Car(object):
 
         # update speed and calculate moving distance
         acceleration = self.getAcceleration()
-        self.setSpeed(self.speed + acceleration * second * SECOND_PER_HOUR)
-        step = max(self.speed * second / SECOND_PER_HOUR + 0.5 * acceleration * math.pow(second, 2), 0)
+        self.setSpeed(self.speed + acceleration * second * Car.SECOND_PER_HOUR)
+        step = max(self.speed * second / Car.SECOND_PER_HOUR + 0.5 * acceleration * math.pow(second, 2), 0)
         nextCarDist = max(self.trajectory.nextCarDistance()[1], 0)
         step = min(nextCarDist, step)
         if self.trajectory.timeToMakeTurn(step):
@@ -235,18 +242,26 @@ class Car(object):
             return False
         return self.destination.isReached(self.trajectory.current)
 
-
     def isOnRightLane(self):
         return self.trajectory.getLane().isRightLane()
 
     def pickNextRoad(self):
         """
-        Randomly pick the next road from the outbound roads of the target intersection.
-        The car cannot make a U-turn unless there is no other road.
-        The car cannot go to a blocked road.
+        If there is a routing path, pick the next road according to the routing path.
+        Otherwise, randomly pick one road.
 
-        :return: a randomly picked road.
+        :return: a Road object
         """
+        if self.route:
+            targetInter = self.trajectory.getRoad().getTarget()
+            while self.route:
+                if self.route[0].getSource() == targetInter:
+                    return self.route[0]
+                self.route.pop(0)
+
+
+        print "[%s]: There is no next road in the routing path" % self.id
+        # randomly pick one road
         intersection = self.trajectory.nextIntersection()
         currentLane = self.trajectory.getLane()
         possibleRoads = [road for road in intersection.outRoads
@@ -254,11 +269,20 @@ class Car(object):
         if not possibleRoads:
             possibleRoads = [road for road in intersection.getOutRoads()]
             if not possibleRoads:
-                print "Err: There is no road to pick"
+                print "[%s]: There is no random road" % self.id
                 return None
-        return sample(possibleRoads, 1)[0]
+        return sampleOne(possibleRoads)
 
     def pickNextLane(self):
+        """
+
+        :return:
+        """
+        # If there is no routing path or the time for getting the routing path is too
+        # long age, update the routing path.
+        if self.route is None or time.time() - self.routeSetTime > UPDATE_ROUTE_TIME:
+            self.getNavigation()
+
         nextRoad = self.pickNextRoad()
         if not nextRoad:
             return None

@@ -22,6 +22,9 @@ class SinkSource(object):
     def getIntersection(self):
         return self.inter
 
+    def getRoad(self):
+        return self.road
+
     def getRoadPos(self):
         return self.road, self.position
 

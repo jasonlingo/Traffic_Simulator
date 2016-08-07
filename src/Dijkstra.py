@@ -82,3 +82,11 @@ def dijkstraTrafficTime(graph, start, goals):
 
     return sys.maxint
 
+def dijkstraRoute(graph, source, destination):
+    """
+    Use Dijkstra to find a shortest path in a weighted (traffic time) graph.
+    :param graph: (RealMap)
+    :param source: (SinkSource)
+    :param destination: (SinkSource)
+    :return: a list of path
+    """
