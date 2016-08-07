@@ -2,7 +2,7 @@ import shapefile as shp
 import pygmaps
 import webbrowser
 import os
-from Traffic import RoadType
+from TrafficUtil import RoadType
 from Road import Road
 from Intersection import Intersection
 from Coordinate import Coordinate
@@ -13,16 +13,18 @@ class Shapefile(object):
     A class that load road data from a shapefile and output as desired data structure.
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, dataNum):
         """
         :param filename: the filename of a shapefile
         """
         self.ctr = shp.Reader(filename)
         self.shapeRecords = self.ctr.iterShapeRecords()
+        self.dataNum = dataNum
 
         self.roads = {}
         self.intersections = {}
 
+        # the top, bottom, right, and left edge of this map
         self.top = None
         self.bot = None
         self.right = None
@@ -57,17 +59,14 @@ class Shapefile(object):
         :param roadType: the given road type.
         :return: a dictionary of coordinates for the road type.
         """
-        # For checking correctness
-        # data = []
-        # check = []
         print "Loading", roadType,
         i = 0
         result = {}
-        for sh in self.ctr.iterShapeRecords():  # total 52339 records
+        for sh in self.ctr.iterShapeRecords():
             i += 1
-            if i % 10000 == 0:
+            if i % 10000 == 0:  # showing progress
                 print ".",
-            if i > 3000:
+            if i > self.dataNum:
                 break
             if sh.record[3] == roadType:
                 lats = [p[1] for p in sh.shape.points]
@@ -78,19 +77,19 @@ class Shapefile(object):
 
                 maxLat, minLat = max(lats), min(lats)
                 maxLnt, minLnt = max(lnts), min(lnts)
-                corners = [Coordinate(p[1], p[0]) for p in sh.shape.points if p[1] == maxLat or\
-                                                                              p[1] == minLat or\
-                                                                              p[0] == maxLnt or\
+                corners = [Coordinate(p[1], p[0]) for p in sh.shape.points if p[1] == maxLat or
+                                                                              p[1] == minLat or
+                                                                              p[0] == maxLnt or
                                                                               p[0] == minLnt]
 
                 # Find the top, bottom, right, and left of this map
-                if self.top < maxLat:
+                if self.top is None or self.top < maxLat:
                     self.top = maxLat
-                if self.right < maxLnt:
+                if self.right is None or self.right < maxLnt:
                     self.right = maxLnt
-                if not self.bot or self.bot > minLat:
+                if self.bot is None or self.bot > minLat:
                     self.bot = minLat
-                if not self.left or self.left > minLnt:
+                if self.left is None or self.left > minLnt:
                     self.left = minLnt
 
                 rdInter = self.makeRoads(roadType, corners, center)
@@ -115,7 +114,7 @@ class Shapefile(object):
     def getBoard(self):
         return self.top, self.bot, self.right, self.left
 
-    def plotMap(self, intersections, roads, interCheck=[], roadCheck=[]):
+    def plotMap(self, intersections, roads, interCheck=None, roadCheck=None):
         print "Total points:", len(intersections) + len(roads)
         if not intersections and not roads:
             print "not points to plot"

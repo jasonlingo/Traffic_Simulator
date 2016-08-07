@@ -4,10 +4,14 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import math
+import random
 from trafficSimulator.TrafficSettings import CLOSE_CRASH_LANE, CLOSE_ALL_CRASH_LANES
+from trafficSimulator.Navigation import Navigator
+from trafficSimulator.TrafficUtil import CarType
+from trafficSimulator.RealMap import RealMap
+from trafficSimulator.Car import Car
 from QLEnvironment import QLEnvironment
 from Settings import GOAL_REWARD
-from trafficSimulator.Car import Car, Taxi
 
 
 class Environment(QLEnvironment):
@@ -22,16 +26,17 @@ class Environment(QLEnvironment):
         :return:
         """
         self.realMap = realMap
-        self.goalLocation = self.realMap.getGoalLanePosition()  # Trajectory object
+        # self.goalLocation = self.realMap.getGoalLanePosition()  # Trajectory object #TODO: currently turn off
 
         # block the goal road, only allow cars move out of the road
         self.block = None
-        if CLOSE_CRASH_LANE:
-            self.block = self.closeLane(self.goalLocation.current.lane)
+        # if CLOSE_CRASH_LANE:
+        #     self.block = self.closeLane(self.goalLocation.current.lane)
 
         self.reachGoal = False
         self.cars = {}
         self.taxis = {}
+        self.crashedCars = set()
 
     def randomLocation(self):
         """
@@ -74,7 +79,7 @@ class Environment(QLEnvironment):
         :param pos: LanePosition
         :return: a list of actions
         """
-        return self.realMap.getAction(pos)
+        return RealMap.getAction(pos)
 
     def getReward(self, pos, action):
         """
@@ -127,12 +132,34 @@ class Environment(QLEnvironment):
         return False
 
     def addRandomCars(self, num):
-        self.realMap.addRandomCars(num, "car")
+        """
+        Add random cars to the map.
+        :param num: number of cars to be added.
+        """
+        self.realMap.addRandomCars(num, CarType.CAR)
         self.cars = self.realMap.getCars()
 
     def addRandomTaxis(self, num):
-        self.realMap.addRandomCars(num, "taxi")
+        """
+        Add random taxis to the map.
+        :param num: number of taxis to be added.
+        """
+        self.realMap.addRandomCars(num, CarType.TAXI)
         self.taxis = self.realMap.getTaxis()
+
+    def addCarFromSource(self, poissonLambda):
+        self.realMap.addCarFromSource(poissonLambda)
+
+    def randomCarAccident(self):
+        if not self.cars:
+            return
+        crashedCar = random.choice(self.cars.values())
+        self.crashedCars.add(crashedCar)
+        crashedCar.setCrash(True)
+        print "Car accident!!! %s crashed" % crashedCar.id
+
+    def getCrashedCar(self):
+        return self.crashedCars
 
     def cleanCars(self):
         self.realMap.cleanCars()
@@ -162,3 +189,4 @@ class Environment(QLEnvironment):
 
     def updateContralSignal(self, delta):
         self.realMap.updateContralSignal(delta)
+

@@ -3,7 +3,7 @@ import random
 import numpy as np
 import sys
 import math
-from Traffic import Traffic
+from TrafficUtil import Traffic
 
 class ControlSignals(object):
 
@@ -14,7 +14,6 @@ class ControlSignals(object):
         self.flipMultiplier = 2 + random.random() * 0.4 - 0.2
         self.flipInterval = self.flipMultiplier * LIGHT_FLIP_INTERVAL
         self.stateNum = 0
-        # TODO: make this for intersections that have more than 4 roads
         self.states = []
         self.inRoads = []
         self.pairNum = None  # the number of paired roads at this intersection.
@@ -66,7 +65,7 @@ class ControlSignals(object):
                 j += self.pairNum
             self.states.append(l)
             self.states.append(fr)
-        self.stateNum = random.choice([n for n in range(len(self.states))])
+        self.stateNum = random.randint(0, len(self.states))
 
     def getSlopeQuadrant(self, road):
         """
@@ -110,7 +109,9 @@ class ControlSignals(object):
 
     def getTurnNumber(self, lane, isInRoad):
         """
-        From the self.roads (which stores in-roads of the intersections), find the road number that the given lane belongs to.
+        From the self.roads (which stores in-roads of the intersections),
+        find the road number that the given lane belongs to.
+
         :param lane: the given lane to be checked
         :param isInRoad: indicates in-road (True) or out-road (False)
         :return: the order of the given lane in the self.roads
@@ -153,7 +154,6 @@ class ControlSignals(object):
     #         self.generateState()
     #
     #     # if len(self.intersection.roads) <= 2:
-    #     #     # TODO: make this for intersections that have more than 4 roads
     #     #     stringState = ['LFR', 'LFR', 'LFR', 'LFR']
     #     # else:
     #     #     # stringState = self.states[self.stateNum % len(self.states)]
@@ -177,6 +177,7 @@ class ControlSignals(object):
 
         if len(self.inRoads) <= 2:
             return True
+
         sourceNum = self.getTurnNumber(sourceLane, True)
         nextNum = self.getTurnNumber(nextLane, False)
         permitEnter = self.states[self.stateNum][sourceNum]
@@ -212,7 +213,6 @@ class ControlSignals(object):
         self.time += delta
         if self.time > self.flipInterval:
             self.flip()
-            # self.time -= self.
             self.time = 0
             return True
 

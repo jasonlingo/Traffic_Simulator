@@ -43,14 +43,3 @@ GAMMA = 0.8
 # time threshold (seconds) for calling another taxi
 CHECK_INTERVAL = 60
 
-
-# ===============================================
-# Discarded settings
-# ===============================================
-# ENV_BOTTOM = 0                                         # the bottom limit of the experiment region
-# ENV_TOP = 50                                           # the top limit of the experiment region
-# ENV_LEFT = 0                                           # the left limit of the experiment region
-# ENV_RIGHT = 50                                         # the right limit of the experiment region
-# SUB_REGION_NUM = max(ENV_TOP * ENV_RIGHT / 50, 1)      # the number of sub-regions in the map
-# MAX_SUB_REGION_SIDE = min(ENV_TOP, ENV_RIGHT) / 5      # the maximum length of side for sub-region
-# DELETE_ROAD_NUM = ENV_TOP * ENV_RIGHT / 4              # determine the road density

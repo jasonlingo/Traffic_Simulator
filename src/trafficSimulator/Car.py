@@ -1,9 +1,13 @@
 from __future__ import division
-import math
 from Trajectory import Trajectory
-from Traffic import *
+from TrafficUtil import *
 from TrafficSettings import CAR_LENGTH
+from Navigation import Navigator
+import math
+import time
 import sys
+
+UPDATE_ROUTE_TIME = 180 # second
 
 
 class Car(object):
@@ -11,23 +15,42 @@ class Car(object):
     A class that represents a car.
     """
 
+    SECOND_PER_HOUR = 3600.0
+
     def __init__(self, lane, position=0, maxSpeed=MAX_SPEED, carType="Car"):
         """
-        :param lane:
-        :param position: the relative position of this car in the given lane
+        :param lane: the lane that this car is moving on
+        :param position: the absolute position of this car in the given lane
         :param maxSpeed: km/h
         :return:
         """
-        self.id = Traffic.uniqueId(carType)
-        self.speed = 0
-        #self.width = CAR_WIDTH      # the unit used here is km
-        self.length = CAR_LENGTH    # the length (km) of this car
-        self.maxSpeed = maxSpeed
-        self.trajectory = Trajectory(self, lane, position)
-        self.nextLane = None
-        self.alive = True
-        self.preferedLane = None
-        self.isTaxi = False
+        # ====================================================================
+        # basic information and states for this car
+        # ====================================================================
+        self.id = Traffic.uniqueId(carType)                 # the id for this car
+        self.isTaxi = False                                 # indicate this car is a general car or a taxi
+        self.alive = True                                   # when this car is going to reach the sink place
+                                                            # (or its destination), self.alive = False
+        self.delete = False                                 # indicate this car can be deleted
+        self.crashed = False                                # indicate this car is crashed or not
+
+        # ====================================================================
+        # variables for driving this car
+        # ====================================================================
+        self.speed = 0                                      # initial speed
+        self.maxSpeed = maxSpeed                            # the maximum speed this car can be drove
+        self.length = CAR_LENGTH                            # the length (km) of this car
+        self.trajectory = Trajectory(self, lane, position)  # manage the moving trajectory of this car
+        self.nextLane = None                                # the next lane this can is going to
+        self.preferedLane = None                            # the lane that this car is going to switch
+
+        # ====================================================================
+        # the destination and route for this care
+        # ====================================================================
+        self.destination = None                             # the destination for this car
+        self.route = None                                   # the path to the destination
+        self.routeSetTime = None                            # the last time to set the path
+        self.navigator = None                               # Navigator object
 
     def __eq__(self, other):
         if not other:
@@ -36,6 +59,13 @@ class Car(object):
 
     def __hash__(self):
         return hash(self.id)
+
+    def setDestination(self, destination):
+        """
+        Set the destination for this car.
+        :param destination: SinkSource object
+        """
+        self.destination = destination
 
     def getCoords(self):
         """
@@ -53,17 +83,29 @@ class Car(object):
     def getPosition(self):
         """
         Return the current LanePosition of this car.
-        :return: LanePosition object
+        :return: current LanePosition object
         """
         return self.trajectory.current
+
+    def setCrash(self, boolean):
+        """
+        When a car crashes (boolean = True), set its speed to 0.
+        :param boolean:
+        """
+        self.crashed = boolean
+        if self.crashed:
+            self.speed = 0
 
     def setSpeed(self, speed):
         """
         Set the current speed of this car to the given speed parameter.
-        The speed should be between 0 ~ max.
+        The speed cannot exceed the maximum speed of this car and the
+        speed limit of the road.
         :param speed: the new speed
         """
-        self.speed = min(self.maxSpeed, max(round(speed, 10), 0))
+        self.speed = min([self.maxSpeed,
+                          max(round(speed, 10), 0),
+                          self.trajectory.getRoad().getSpeedLimit()])
 
     # def getDirection(self):
     #     """
@@ -72,40 +114,59 @@ class Car(object):
     #     """
     #     return self.trajectory.direction  #FIXME: error attribute
 
+    def getNavigation(self):
+        """
+        Use Navigator to find the shortest route for this car to the destination.
+        """
+        self.route = self.navigator.navigate(self, self.trajectory.getRoad(), self.destination)
+        self.routeSetTime = time.time()
+
     def release(self):
+        """
+        delete this car's position from the lane
+        """
         self.trajectory.release()
 
     def getAcceleration(self):
         """
-        Get the acceleration of the speed of this car.
+        Get the acceleration factor of this car.
         For the detail of this model, refer to https://en.wikipedia.org/wiki/Intelligent_driver_model
-        :return: accelerating speed
+        It will take the following factors into consideration:
+        1. the distance to the intersection line
+        2. the distance to the front car (if there is a car in front of this car)
+        3. the speed difference between the front car and this car
+        :return: accelerating factor
         """
+        # ===========================================================
         # some constant parameters
         TIME_HEAD_AWAY   = 1.5    # second
         DIST_GAP         = 0.002  # km
         MAX_ACCELERATION = 0.001  # the maximum acceleration (km/s^2)
         MAX_DECELERATION = 0.003  # the maximum deceleration (km/s^2)
+        # ===========================================================
 
+        # calculate the free road coefficient
         nextCar, nextDistance = self.trajectory.nextCarDistance()
         distanceToNextCar = max(nextDistance, 0)
-        deltaSpeed = self.speed - (nextCar.speed if nextCar is not None else 0)
-        speedRatio = (self.speed / self.maxSpeed)
+        deltaSpeed = (self.speed - nextCar.speed) if nextCar is not None else 0
+        speedRatio = self.speed / self.maxSpeed
         freeRoadCoeff = pow(speedRatio, 4)
 
-        timeGap = self.speed * TIME_HEAD_AWAY / 3600.0  # (km/h) * (second/3600)
+        # calculate the busy road coefficient
+        timeGap = self.speed * TIME_HEAD_AWAY / Car.SECOND_PER_HOUR  # (km/h) * (second/3600)
         breakGap = self.speed * deltaSpeed / (2 * math.sqrt(MAX_ACCELERATION * MAX_DECELERATION))
         safeDistance = DIST_GAP + timeGap + breakGap
         if distanceToNextCar > 0:
-            distRatio = (safeDistance / float(distanceToNextCar))
+            distRatio = safeDistance / distanceToNextCar
             busyRoadCoeff = pow(distRatio, 2)
         else:
             busyRoadCoeff = sys.maxint
 
+        # calculate the intersection coefficient
         safeIntersectionDist = 0.001 + timeGap + pow(self.speed, 2) / (2 * MAX_DECELERATION)
         distanceToStopLine = self.trajectory.distanceToStopLine()
         if distanceToStopLine > 0:
-            safeInterDistRatio = (safeIntersectionDist / float(distanceToStopLine if distanceToStopLine > 0 else 0.0001))
+            safeInterDistRatio = safeIntersectionDist / distanceToStopLine
             intersectionCoeff = pow(safeInterDistRatio, 2)
         else:
             intersectionCoeff = sys.maxint
@@ -122,63 +183,106 @@ class Car(object):
         to go straight, turn right, or left.
         :param second: the given time interval in second
         """
-        acceleration = self.getAcceleration()
-        self.setSpeed(self.speed + acceleration * second * 3600)
+        if self.crashed:  # crashed car cannot move
+            return
+
+        # choose a quicker lane
+        currentLane = self.trajectory.getLane()
+        preferedLane = self.getPreferedLane()
+        if preferedLane != currentLane:
+            self.trajectory.switchLane(preferedLane)
 
         # if (not self.trajectory.isChangingLanes) and self.nextLane:
         #     currentLane = self.trajectory.current.lane
         #     turnNumber = currentLane.getTurnDirection(self.nextLane)
 
-        # choose a quicker lane
-        currentLane = self.trajectory.current.lane
-        preferedLane = self.getPreferedLane()
-        if preferedLane != currentLane:
-            self.trajectory.switchLane(preferedLane)
-
-        step = max(self.speed * second / 3600.0 + 0.5 * acceleration * math.pow(second, 2), 0)
+        # update speed and calculate moving distance
+        acceleration = self.getAcceleration()
+        self.setSpeed(self.speed + acceleration * second * Car.SECOND_PER_HOUR)
+        step = max(self.speed * second / Car.SECOND_PER_HOUR + 0.5 * acceleration * math.pow(second, 2), 0)
         nextCarDist = max(self.trajectory.nextCarDistance()[1], 0)
-
         step = min(nextCarDist, step)
         if self.trajectory.timeToMakeTurn(step):
             if self.nextLane is None:
                 self.pickNextLane()
+
+        if self.alive and self.reachedDestination():
+            self.alive = False
+
         self.trajectory.moveForward(step)
 
     def getPreferedLane(self):
         """
-        Choose the faster lane of current road
-        :param turnNumber:
-        :param currentLane:
-        :return:
+        Choose the quicker lane of current road.
+        If the car is going to turn right, then choose the right-most lane
+        :return: Lane object
         """
-        # TODO: now it only has at most 2 lanes of a road. when the number of lanes per road
-        # is large than 2, then the car can only change to the neighbor lanes.
+        # if this car is going to turn right, it must be on the right-most lane #TODO
 
         # current lane only has this car, no need to switch lane.
-        if len(self.trajectory.current.lane.carsPosition) == 1:
-            return self.trajectory.current.lane
-        return self.trajectory.current.lane.road.getFastestLane()
+        if len(self.trajectory.getLane().carsPosition) == 1:
+            return self.trajectory.getLane()
+
+        # if the quicker lane's speed is < current lane's speed * 1.2, then keep going on current lane
+        # only find the average speed of the front cars
+        fastLane, fastSpeed = \
+            self.trajectory.getRoad().getFastLaneBeforePos(self.trajectory.getAbsolutePosition() + self.length / 2)
+        if fastLane != self.trajectory.getLane() and \
+            fastSpeed >= self.trajectory.getLane().getFrontAvgSpeed(self.trajectory.getAbsolutePosition() + self.length / 2):  #
+            return fastLane
+
+        return self.trajectory.getLane()  # not change lane
+
+    def reachedDestination(self):
+        """
+        Check whether this car reached its destination.
+        :return: True if reached; False otherwise
+        """
+        if not self.destination:
+            return False
+        return self.destination.isReached(self.trajectory.current)
+
+    def isOnRightLane(self):
+        return self.trajectory.getLane().isRightLane()
 
     def pickNextRoad(self):
         """
-        Randomly pick the next road from the outbound roads of the target intersection.
-        The car cannot make a U-turn unless there is no other road.
-        The car cannot go to a blocked road.
+        If there is a routing path, pick the next road according to the routing path.
+        Otherwise, randomly pick one road.
 
-        :return: a randomly picked road.
+        :return: a Road object
         """
+        if self.route:
+            targetInter = self.trajectory.getRoad().getTarget()
+            while self.route:
+                if self.route[0].getSource() == targetInter:
+                    return self.route[0]
+                self.route.pop(0)
+
+
+        print "[%s]: There is no next road in the routing path" % self.id
+        # randomly pick one road
         intersection = self.trajectory.nextIntersection()
-        currentLane = self.trajectory.current.lane
+        currentLane = self.trajectory.getLane()
         possibleRoads = [road for road in intersection.outRoads
                          if road.target != currentLane.road.source and not road.isBlocked()]
         if not possibleRoads:
             possibleRoads = [road for road in intersection.getOutRoads()]
             if not possibleRoads:
-                print "Err: There is no road to pick"
+                print "[%s]: There is no random road" % self.id
                 return None
-        return sample(possibleRoads, 1)[0]
+        return sampleOne(possibleRoads)
 
     def pickNextLane(self):
+        """
+
+        :return:
+        """
+        # If there is no routing path or the time for getting the routing path is too
+        # long age, update the routing path.
+        if self.route is None or time.time() - self.routeSetTime > UPDATE_ROUTE_TIME:
+            self.getNavigation()
+
         nextRoad = self.pickNextRoad()
         if not nextRoad:
             return None
@@ -253,7 +357,6 @@ class Taxi(Car):
         if self.available or haversine(self.source, self.getCurLocation()) >= 1:  # 1 km
             if random.random() > 0.5:  #TODO: need to choose a better threshold?
                 self.available = not self.available
-                # self.setSource(self.getCurLocation())
 
     def setAvailable(self, avail):
         self.available = avail

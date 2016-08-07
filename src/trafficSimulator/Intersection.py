@@ -1,4 +1,4 @@
-from Traffic import *
+from TrafficUtil import *
 from ControlSignals import ControlSignals
 
 
@@ -22,6 +22,7 @@ class Intersection(object):
         self.outRoads = []
         self.inRoads = []
         self.controlSignals = ControlSignals(self)
+        self.isSink = None
 
     def update(self):
         for rd in self.outRoads:
@@ -31,8 +32,19 @@ class Intersection(object):
             result.append(ird.update())
         return result
 
+    # def isSinkInter(self):
+    #     if self.isSink is None:
+    #         self.isSink = len(self.outRoads) == 1
+    #     return self.isSink
+
     def getId(self):
         return self.id
+
+    def getCoords(self):
+        """
+        :return: longitude, latitude
+        """
+        return self.center.getCoords()
 
     def getOutRoads(self):
         return self.outRoads
@@ -43,14 +55,10 @@ class Intersection(object):
     def addOutRoad(self, rd):
         if rd.target.center.getCoords() not in [road.target.center.getCoords() for road in self.outRoads]:
             self.outRoads.append(rd)
-        # else:
-        #     print "duplicated out road"
 
     def addInRoad(self, rd):
         if rd.source.center.getCoords() not in [road.source.center.getCoords() for road in self.inRoads]:
             self.inRoads.append(rd)
-        # else:
-        #     print "duplicated in road"
 
     def buildControlSignal(self):
         self.controlSignals.generateState()

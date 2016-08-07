@@ -1,3 +1,4 @@
+from __future__ import division
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -21,15 +22,9 @@ class Trajectory(object):
         self.car = car
         self.current = LanePosition(self.car, lane, position)
         self.current.acquire()
-
-        # self.next = LanePosition(self.car, lane, position)
         self.next = LanePosition(self.car)
-        # self.temp = LanePosition(self.car, lane, position)
-        # self.temp = LanePosition(self.car)
-
         self.isChangingLanes = False
         self.absolutePosition = None
-        # self.relativePosition = None
 
     def setGoal(self):
         self.current.setGoal()
@@ -59,16 +54,9 @@ class Trajectory(object):
         #     return self.temp.position
         # else:
         return self.current.position
-        # return self.current.position
 
     def getRelativePosition(self):
-        # if self.temp.lane:
-        #     return self.getAbsolutePosition() / self.temp.lane.length
-        # else:
         return self.getAbsolutePosition() / self.current.lane.getLength()
-
-        # return self.getAbsolutePosition() / (float(self.temp.lane.length) if self.temp.lane else float(self.current.lane.length)
-        # return self.current.position
 
     # def getDirection(self):
     #     # if self.temp.lane:
@@ -161,6 +149,10 @@ class Trajectory(object):
         self.current.position += distance
         self.next.position += distance
         if self.timeToMakeTurn() and self.canEnterIntersection() and self.isValidTurn():
+            if not self.car.alive:  # go to destination
+                self.car.release()
+                self.car.delete = True
+
             self.startChangingLanes(self.car.popNextLane(), distance)
 
         # if self.temp.lane:
@@ -168,7 +160,7 @@ class Trajectory(object):
         # else:
         #     tempRelativePosition = 0
 
-        gap = 2.0 * self.car.length  # TODO: why need double the length of the car
+        gap = 2.0 * self.car.length
         # if self.isChangingLanes and self.temp.position > gap and not self.current.free: #fixme
         if self.isChangingLanes and not self.current.free:
             self.current.release()
@@ -181,6 +173,7 @@ class Trajectory(object):
             self.car.pickNextLane()
 
     def changeLane(self, nextLane):
+        print "car %d is changing lane" % self.car.id
         if self.isChangingLanes:
             print "already changing lane"
             return
@@ -213,12 +206,10 @@ class Trajectory(object):
         if self.current.lane.road != targetLane.road:
             print "not on the same road"
             return
-        if targetLane.canSwitchLane(self.current.position, self.car.length):
+        if targetLane.canSwitchLane(self.current.position):
             self.current.release()
             self.current.lane = targetLane
             self.current.acquire()
-
-
 
     # def getIntersectionLaneChangeCurve(self):
     #     return
@@ -275,4 +266,3 @@ class Trajectory(object):
             self.current.release()
         if self.next:
             self.next.release()
-        # self.temp.release()
