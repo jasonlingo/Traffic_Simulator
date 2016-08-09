@@ -2,12 +2,11 @@ from __future__ import division
 from Trajectory import Trajectory
 from TrafficUtil import *
 from TrafficSettings import CAR_LENGTH
-from Navigation import Navigator
 import math
 import time
 import sys
 
-UPDATE_ROUTE_TIME = 180 # second
+UPDATE_ROUTE_TIME = 120  # second
 
 
 class Car(object):
@@ -153,7 +152,7 @@ class Car(object):
         freeRoadCoeff = pow(speedRatio, 4)
 
         # calculate the busy road coefficient
-        timeGap = self.speed * TIME_HEAD_AWAY / Car.SECOND_PER_HOUR  # (km/h) * (second/3600)
+        timeGap = self.speed * TIME_HEAD_AWAY / Car.SECOND_PER_HOUR  # (km/h) * (second/3600) = km
         breakGap = self.speed * deltaSpeed / (2 * math.sqrt(MAX_ACCELERATION * MAX_DECELERATION))
         safeDistance = DIST_GAP + timeGap + breakGap
         if distanceToNextCar > 0:
@@ -200,7 +199,8 @@ class Car(object):
         acceleration = self.getAcceleration()
         self.setSpeed(self.speed + acceleration * second * Car.SECOND_PER_HOUR)
         step = max(self.speed * second / Car.SECOND_PER_HOUR + 0.5 * acceleration * math.pow(second, 2), 0)
-        nextCarDist = max(self.trajectory.nextCarDistance()[1], 0)
+        _, nextCarDist = self.trajectory.nextCarDistance()
+        nextCarDist = max(nextCarDist, 0)
         step = min(nextCarDist, step)
         if self.trajectory.timeToMakeTurn(step):
             if self.nextLane is None:
@@ -208,6 +208,7 @@ class Car(object):
 
         if self.alive and self.reachedDestination():
             self.alive = False
+            self.delete = True
 
         self.trajectory.moveForward(step)
 
@@ -259,8 +260,6 @@ class Car(object):
                     return self.route[0]
                 self.route.pop(0)
 
-
-        print "[%s]: There is no next road in the routing path" % self.id
         # randomly pick one road
         intersection = self.trajectory.nextIntersection()
         currentLane = self.trajectory.getLane()
@@ -280,10 +279,11 @@ class Car(object):
         """
         # If there is no routing path or the time for getting the routing path is too
         # long age, update the routing path.
-        if self.route is None or time.time() - self.routeSetTime > UPDATE_ROUTE_TIME:
+        if not self.route or time.time() - self.routeSetTime > UPDATE_ROUTE_TIME:
             self.getNavigation()
 
         nextRoad = self.pickNextRoad()
+
         if not nextRoad:
             return None
         # turnNumber = self.trajectory.current.lane.getTurnDirection(nextRoad)
@@ -291,15 +291,19 @@ class Car(object):
         # self.nextLane = nextRoad.lanes[laneNumber]
         self.nextLane = self.getLaneNumber(nextRoad)
         if not self.nextLane:
-            print 'cannot pick next lane'
+            print "[%s]: cannot pick next lane" % self.id
 
     def getLaneNumber(self, nextRoad):
         """
-        Choose a lane that has faster average speed.
+        Choose the same lane (left- or right-most) as the current lane.
         :param nextRoad:
         :return:
         """
-        return nextRoad.getFastestLane()
+        if self.trajectory.getLane().isRightLane():
+            return nextRoad.getLanes()[-1]
+        else:
+            return nextRoad.getLanes()[0]
+        # return nextRoad.getFastestLane()
 
     def popNextLane(self):
         nextLane = self.nextLane

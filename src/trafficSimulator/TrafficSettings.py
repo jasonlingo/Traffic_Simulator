@@ -33,5 +33,5 @@ ANIMATION_LAPSE = 100
 CAR_LENGTH = 0.0045
 """The length (in km) of a car"""
 
-POI_LAMBDA = 0.001
+POI_LAMBDA = 0.0001
 """lambda parameter for poisson arrival for the new car comes into the map"""

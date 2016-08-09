@@ -1,10 +1,11 @@
 from __future__ import division
 import sys
 import math
+from TrafficUtil import GPS_DIST_UNIT
 from TrafficSettings import MAX_SPEED
 from Coordinate import Coordinate
 
-LANE_WIDTH = 0.005  # latitude or longitude degree, it is about 5-meters long
+LANE_WIDTH = 0.030 / GPS_DIST_UNIT  # km -> geo unit
 
 
 class Lane(object):
@@ -147,12 +148,13 @@ class Lane(object):
         """
         if carPos.lane != self:
             print "car is on other lane"
-            return []
-        next = []
+            return None
+
+        nextLanePos = None
         shortestDist = sys.maxint
         for cp in self.carsPosition.itervalues():
             if cp.isGoalFlag:
-                next.append(cp)
+                nextLanePos.append(cp)
                 continue
             if cp.position is None:
                 print "the car has no position"
@@ -162,8 +164,8 @@ class Lane(object):
             distance = cp.position - carPos.position
             if not cp.free and (0 < distance < shortestDist):  # only pick the cars in front of current car
                 shortestDist = distance
-                next.append(cp)
-        return next
+                nextLanePos = cp
+        return nextLanePos
 
     def getCars(self):
         return [cp.car for cp in self.carsPosition.values()]
@@ -249,7 +251,7 @@ class Lane(object):
         # lng = lngLatRatio * lat and lng^2 + lat^2 == dist^2
         # lngLatRatio^2 * lat^2 + lat^2 = dist^2
         # lat = sqrt(dist^2 / (1 + lngLatRatio^2)) = dist * sqrt(1 + lngLatRatio^2)
-        lat = dist / math.sqrt(1 + lngLatRatio * lngLatRatio)  # currently lat must be a positive value
+        lat = dist / math.sqrt(1 + lngLatRatio * lngLatRatio)
 
         # if the value of the original vector are of the same sign,
         # then the lat value is of the opposite sign
