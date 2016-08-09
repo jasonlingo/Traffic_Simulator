@@ -14,7 +14,7 @@ class ControlSignals(object):
         self.flipMultiplier = 2 + random.random() * 0.4 - 0.2
         self.flipInterval = self.flipMultiplier * LIGHT_FLIP_INTERVAL
         self.stateNum = 0
-        self.states = []
+        self.states = None
         self.inRoads = []
         self.pairNum = None  # the number of paired roads at this intersection.
 
@@ -50,8 +50,6 @@ class ControlSignals(object):
         self.inRoads.extend(quadrant2)
         self.inRoads.extend(quadrant3)
         self.inRoads.extend(quadrant4)
-        if len(tmpInRoads) != len(self.inRoads):
-            print "number of in roads error"
 
         # generate states: each state can only has two roads permitted to go through the intersection
         self.pairNum = int(math.ceil(len(self.inRoads) / 2.0))
@@ -60,17 +58,17 @@ class ControlSignals(object):
             fr = ['' for _ in range(len(self.inRoads))]
             j = i
             while j < len(self.inRoads):
-                l[j] = 'L'
-                fr[j] = 'FR'
+                l[j] = 'L'    # allow left turn
+                fr[j] = 'FR'  # allow forward and right turn
                 j += self.pairNum
             self.states.append(l)
             self.states.append(fr)
-        self.stateNum = random.randint(0, len(self.states))
+        self.stateNum = random.randint(0, len(self.states) - 1)
 
     def getSlopeQuadrant(self, road):
         """
-        Compute the slope of the given road.
-        :param road:
+        Compute the slope of the given road centered at the intersection.
+        :param road: the Road object that its target is the intersection.
         :return: slope
         """
         center = np.array(self.intersection.center.getCoords())
@@ -81,29 +79,25 @@ class ControlSignals(object):
         else:
             slope = diff[1] / diff[0]
 
-        if diff[0] >= 0 and diff[1] > 0:
-            qd = 1
-        elif diff[0] <= 0 and diff[1] < 0:
-            qd = 3
-        elif diff[0] > 0 and diff[1] <= 0:
-            qd = 4
-        elif diff[0] < 0 and diff[1] >= 0:
-            qd = 2
-        else:
-            print "Warn: this road is at the center of the intersection"
-            qd = 1
+        '''
+            __
+           2  |  1
+         _____|_____|
+        |  3  |  4
+              |__
 
+        diff[0]: x
+        diff[1]: y
+        '''
         if diff[0] == 0 and diff[1] == 0:
-            qd2 = 1
+            qd = 1
         else:
             if diff[0] > 0:
-                qd2 = 1 if diff[1] > 0 else 4
+                qd = 1 if diff[1] >= 0 else 4
             elif diff[0] == 0:
-                qd2 = 1 if diff[1] > 0 else 3
-            else:
-                qd2 = 2 if diff[1] >= 0 else 3
-        if qd != qd2:
-            print "qd err!!!"
+                qd = 1 if diff[1] > 2 else 4
+            else:  # diff[0] < 0
+                qd = 2 if diff[1] > 0 else 3
 
         return qd, slope
 
@@ -172,6 +166,13 @@ class ControlSignals(object):
         return state
 
     def canEnterIntersection(self, sourceLane, nextLane):
+        """
+        Determine whether a car an enter the intersection from the source lane to the next lane.
+
+        :param sourceLane: (Lane)
+        :param nextLane: (Lane)
+        :return: True if the car can enter the intersection; False otherwise.
+        """
         if not self.states:
             self.generateState()
 
@@ -180,6 +181,7 @@ class ControlSignals(object):
 
         sourceNum = self.getTurnNumber(sourceLane, True)
         nextNum = self.getTurnNumber(nextLane, False)
+
         permitEnter = self.states[self.stateNum][sourceNum]
         if not permitEnter:
             return False
@@ -201,7 +203,6 @@ class ControlSignals(object):
         if not self.states:
             self.generateState()
 
-        # self.stateNum += 1
         self.stateNum = (self.stateNum + 1) % len(self.states)
         # print self.states[self.stateNum]
 

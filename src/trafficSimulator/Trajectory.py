@@ -4,7 +4,6 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from LanePosition import LanePosition
-import sys
 
 
 class Trajectory(object):
@@ -69,6 +68,10 @@ class Trajectory(object):
         return self.current.lane.getPoint(self.getRelativePosition())
 
     def nextCarDistance(self):
+        """
+        Return the distance to the front car in the same lane or the next lane.
+        :return:
+        """
         curCar, curDist = self.current.nextCarDistance()
         nextCar, nextDist = self.next.nextCarDistance()
         if curDist < nextDist:
@@ -88,11 +91,13 @@ class Trajectory(object):
         return self.current.lane.road.getSource()
 
     def isValidTurn(self):
-        nextLane = self.car.nextLane
-        # sourceLane = self.current.lane
-        if not nextLane:
-            print "no road to enter"
+        if not self.car.nextLane:
             return False
+        # nextLane = self.car.nextLane
+        # sourceLane = self.current.lane
+        # if not nextLane:
+            # print "no road to enter"
+            # return False
         # turnNumber = sourceLane.getTurnDirection(nextLane)
         # if turnNumber == 3:
         #     print "no U-turns are allowed"
@@ -173,7 +178,7 @@ class Trajectory(object):
             self.car.pickNextLane()
 
     def changeLane(self, nextLane):
-        print "car %d is changing lane" % self.car.id
+        print "%s is changing lane" % self.car.id
         if self.isChangingLanes:
             print "already changing lane"
             return

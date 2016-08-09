@@ -11,7 +11,7 @@ import time
 
 if __name__ == '__main__':
 
-    DEBUG = True
+    DEBUG = False
 
     # def runExp():
     #     """
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     env = Environment(realMap)
     # exp = Experiment(env, TAXI_NUM, CAR_NUM, epsilon=EPSILON, alpha=ALPHA, gamma=GAMMA)
     initCarNum = 10
-    initTaxiNum = 0
+    initTaxiNum = 10
     trafficCtrl = TrafficController(env, initCarNum, initTaxiNum)
 
     # For debugging usage. If debugging mode is turned on, then it will not

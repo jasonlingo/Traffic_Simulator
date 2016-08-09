@@ -39,6 +39,14 @@ class Road(object):
         self.sourceSideId = 0
         self.update()
 
+    def __eq__(self, other):
+        if not other:
+            return False
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
+
     def parseCorners(self, corners):
         """
         Find the top, bottom, right, and left most coordinates.

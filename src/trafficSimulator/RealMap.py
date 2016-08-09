@@ -13,6 +13,7 @@ import numpy
 import random
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from Navigation import Navigator
 
 
 # probabilities for edge intersections to be a sink or source places
@@ -321,8 +322,11 @@ class RealMap(object):
                 nextInter = road.getTarget()
                 if nextInter.id in visited:
                     if road.getLength() >= MIN_SINK_SOURCE_ROAD_LENGTH:
-                        position = ROAD_OFFSET_FOR_SINK_SOURCE_POINT + \
-                                   random.random() * (1 - 2 * ROAD_OFFSET_FOR_SINK_SOURCE_POINT)
+                        # Pick the random position on the road. It is a absolute distance.
+                        # We also prevent that the random position be set near the intersections by
+                        # using a ROAD_OFFSET_FOR_SINK_SOURCE_POINT
+                        position = (ROAD_OFFSET_FOR_SINK_SOURCE_POINT +
+                                   random.random() * (1 - 2 * ROAD_OFFSET_FOR_SINK_SOURCE_POINT)) * road.getLength()
                         point = SinkSource(None, road, position)
                         self.sink.add(point)
                         self.source.add(point)
@@ -407,7 +411,7 @@ class RealMap(object):
                     addCar = True
                     for car in lane.getCars():
                         if car.trajectory.getAbsolutePosition() < CAR_LENGTH:
-                            print "front car is too close to the new car"
+                            # print "front car is too close to the new car"
                             addCar = False
                             break
                     if addCar:
@@ -417,7 +421,7 @@ class RealMap(object):
                         newCar.setDestination(destination)
                         newCar.navigator = self.navigator
                         self.cars[newCar.id] = newCar
-                        print "add a new car %s" % newCar.id
+                        print "Add a new car: %s. [%d cars, %d taxis]" % (newCar.id, len(self.cars), len(self.taxis))
                         if addedCar == numCar:
                             break
             else:
@@ -427,7 +431,7 @@ class RealMap(object):
                     addCar = True
                     for car in lane.getCars():
                         if absolutePos - CAR_LENGTH < car.trajectory.getAbsolutePosition() < absolutePos + CAR_LENGTH:
-                            print "front car is too close to the new car"
+                            # print "front car is too close to the new car"
                             addCar = False
                             break
                     if addCar:
@@ -438,9 +442,12 @@ class RealMap(object):
                         newCar.navigator = self.navigator
                         self.cars[newCar.id] = newCar
                         newCar.destination = sampleOne(self.sink)
-                        print "add a new car %s" % newCar.id
+                        print "Add a new car: %s. [%d cars, %d taxis]" % (newCar.id, len(self.cars), len(self.taxis))
                         if addedCar == numCar:
                             break
+
+    def getRandomDestinatino(self):
+        return sampleOne(self.sink)
 
     def checkOverlap(self, lane, position, carLength):
         """
@@ -485,8 +492,20 @@ class RealMap(object):
                 self.roadAvgSpeed[road] = road.getCurAvgSpeed()
             # since the time only be used for comparison, no need to convert it to second
             # currently it is calculated by distance (km) / speed (km/hour) = hour
-            time = (road.getLength() / float(self.roadAvgSpeed[road])) if self.roadAvgSpeed[road] > 0 else sys.maxint
+            time = (road.getLength() / float(self.roadAvgSpeed[road])) if self.roadAvgSpeed[road] > 0 else Navigator.MAX_TIME
             nbs.append((time, road.getTarget()))
+        return nbs
+
+    def neighborAndDistance(self, intersection):
+        """
+        Return a list of neighbor along with the time from the given intersection to
+        the neighbor intersections.
+        :param intersection: (Intersection)
+        :return: a list of tuple (time, neighbor intersection)
+        """
+        nbs = []
+        for road in intersection.getOutRoads():
+            nbs.append((road.getLength(), road.getTarget()))
         return nbs
 
     def cost(self, sourceIntersection, targetIntersection):

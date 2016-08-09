@@ -39,7 +39,9 @@ class SinkSource(object):
             return self.inter == nextInter
         else:
             road = lanePos.getRoad()
-            return self.road == road and self.position <= lanePos.getPosition()
+            arrive = self.road.id == road.id and \
+                   (self.position <= lanePos.getPosition() or self.position - lanePos.getPosition() <= 0.005)
+            return arrive
 
     def getCoords(self):
         if self.inter is not None:

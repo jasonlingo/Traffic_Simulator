@@ -61,21 +61,27 @@ class LanePosition(object):
         Find the nearest car in front of this car and the distance.
         :return: the nearest car, distance (km)
         """
-        # get a list of LanePosition in front of this car
-        nextLanePossitions = self.getNext()
-        # calculate the front position of this car
+        # get the LanePosition in front of this car
+        nextLanePosition = self.getNext()
+        # calculate the head position of this car
         frontPosition = self.position + self.car.length / 2.0
 
         # find the nearest car in front of this car
         nextCar = None
         # nextRearPos = self.lane.getLength() if self.lane else sys.maxint
         nextRearPos = sys.maxint
-        for lanePosition in nextLanePossitions:
-            # if lanePosition.isGoal() and not self.car.isTaxi: # FIXME: check if still need this
-            #     continue
-            rearPosition = lanePosition.position - (lanePosition.car.length / 2.0 if lanePosition.car else 0)
+
+        if nextLanePosition:
+            rearPosition = nextLanePosition.position - (nextLanePosition.car.length / 2.0 if nextLanePosition.car else 0)
             if frontPosition <= rearPosition < nextRearPos:
+                nextCar = nextLanePosition.car
                 nextRearPos = rearPosition
+        # for lanePosition in nextLanePosition:
+        #     # if lanePosition.isGoal() and not self.car.isTaxi: # FIXME: check if still need this
+        #     #     continue
+        #     rearPosition = lanePosition.position - (lanePosition.car.length / 2.0 if lanePosition.car else 0)
+        #     if frontPosition <= rearPosition < nextRearPos:
+        #         nextRearPos = rearPosition
 
         return nextCar, nextRearPos - frontPosition
 
@@ -102,5 +108,5 @@ class LanePosition(object):
         """
         if self.lane and not self.free:
             return self.lane.getNext(self)
-        return []
+        return None
 

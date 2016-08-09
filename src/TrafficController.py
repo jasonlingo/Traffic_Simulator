@@ -1,5 +1,5 @@
 import time
-from trafficSimulator.TrafficUtil import POI_LAMBDA
+from trafficSimulator.TrafficSettings import POI_LAMBDA
 from trafficSimulator.Navigation import Navigator
 
 
@@ -36,7 +36,7 @@ class TrafficController(object):
         TIME_FOR_ACCIDENT = 100
         # preTime = time.time()
         accident = False
-        deltaTime = 1
+        deltaTime = 0.3
         while True:
             # clear the cached average speed of roads in the previous loop.
             self.env.realMap.clearRoadAvgSpeed()
@@ -52,14 +52,24 @@ class TrafficController(object):
             self.env.addCarFromSource(POI_LAMBDA)
 
             # delete cars that is reach a sink intersection
-            deletedCars = [car.id for car in self.cars.values() if car.delete]
-            for carId in deletedCars:
-                print "%s went to the sink point" % carId
-                del self.cars[carId]
+            for car in self.cars.values():
+                if car.delete:
+                    car.release()
+                    del self.cars[car.id]
+                    print "%s went to the sink point. [%d cars, %d taxis]" % (car.id, len(self.cars), len(self.taxis))
 
             # make each car move
             for car in self.cars.values():
                 car.move(deltaTime)
+
+            # assign a new destination to taxis that arrive their old destinations.
+            for taxi in self.taxis.values():
+                if taxi.delete:
+                    print "%s arrived its destination. Assign a new destination to it." % taxi.id
+                    newDestination = self.env.realMap.getRandomDestinatino()
+                    taxi.destination = newDestination
+                    taxi.delete = False
+                    taxi.alive = False
 
             # make each taxi move
             for taxi in self.taxis.values():
