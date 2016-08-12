@@ -1,6 +1,16 @@
-# ===============================================
+# ============================================================================
+# Google API
+# ============================================================================
+GOOGLE_STATIC_MAP_KEY = "AIzaSyBi3aJFeFLJ14VtWv2ERQ9R-BAbIxjOjyA"
+"""The API key for Google static map"""
+
+GOOGLE_STATIC_MAP_API_ADDRESS = "https://maps.googleapis.com/maps/api/staticmap?"
+"""The API address for Google static map"""
+
+
+# ============================================================================
 # Settings
-# ===============================================
+# ============================================================================
 METER_TYPE = "K"
 """Use kilometer (K) or mile (M) for the haversine function"""
 

@@ -210,6 +210,15 @@ class RealMap(object):
 
         print "Using", (time.time() - start_time), "seconds"
 
+
+    def createS2Map(self):
+        """
+        Create the map by utilizing the Google S2 algorithm.
+        (https://docs.google.com/presentation/d/1Hl4KapfAENAOf4gv-pSngKwvS_jwNVHRPZTTDzXXn6Q/view?pli=1#slide=id.i95)
+        :return:
+        """
+        pass
+
     def buildTrafficLight(self):
         """
         add control signal on each intersection
