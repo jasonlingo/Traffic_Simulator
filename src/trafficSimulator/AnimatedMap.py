@@ -2,6 +2,20 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import threading
 import sys
+from GoogleMap import getGoogleStaticMap, genGooglemap
+
+
+def convertGeoUnit(lat, lng, imageWidth, imageHeight):
+    """
+    Convert geocoding (lat, lng) to the pixel unit of the base image.
+    :param lat:
+    :param lng:
+    :param imageWidth: (float) the width of the background image.
+    :param imageHeight: (float) the height of the background image.
+    :return: the (x, y) position.
+    """
+    pass
+
 
 class AnimatedMap(threading.Thread):
     """
@@ -22,13 +36,6 @@ class AnimatedMap(threading.Thread):
         # self.cars = realMap.getCars()
         # self.taxis = realMap.getTaxis()
 
-    def carData(self):
-        """
-        The method that generates the positions of all cars.
-        :return: the cars' positions
-        """
-        pass
-
     def plotAnimatedMap(self, fig, ax):
         """
         This method will be continuously run
@@ -41,9 +48,28 @@ class AnimatedMap(threading.Thread):
         # self.goalPoint, = ax.plot([goalLng], [goalLat], 'r*', ms=10)
         print "plotting animated map"
         self.cnt = 0
-        board = self.realMap.getBoard()  #[top, bot, right, left]
-        latDiff = board[0] - board[1]
-        lngDiff = board[2] - board[3]
+
+        # get the center of the map
+        # maxLat, minLat = -sys.maxint, sys.maxint
+        # maxLng, minLng = -sys.maxint, sys.maxint
+        # for road in self.roads.values():
+        #     sourceLng, sourceLat = road.getSource().getCoords()
+        #     targetLng, targetLat = road.getTarget().getCoords()
+        #     maxLat = max(maxLat, sourceLat, targetLat)
+        #     minLat = min(minLat, sourceLat, targetLat)
+        #     maxLng = max(maxLng, sourceLng, targetLng)
+        #     minLng = min(minLng, sourceLng, targetLng)
+        # self.centerLat = (maxLat + minLat) / 2
+        # self.centerLng = (maxLng + minLng) / 2
+
+        # plt.plot([maxLng, maxLng, minLng, minLng, centerLng], [maxLat, minLat, maxLat, minLat, centerLat], color='r')
+
+        # imgFilename = "map.png"
+        # getGoogleStaticMap(self.centerLat, self.centerLng, imgFilename)
+        # image = plt.imread(imgFilename)
+        # plt.imshow(image)
+        # plt.axis("off")
+
         self.printCrashCar = False
         self.maxLat = -sys.maxint
         self.minLng = sys.maxint
@@ -55,6 +81,11 @@ class AnimatedMap(threading.Thread):
             """
             print "Init animation"
 
+            self.maxLat = -sys.maxint
+            self.minLat = sys.maxint
+            self.maxLng = -sys.maxint
+            self.minLng = sys.maxint
+
             # plot roads
             for rd in self.roads.values():
                 source = rd.getSource()
@@ -62,15 +93,26 @@ class AnimatedMap(threading.Thread):
                 if source and target:
                     lngs = [source.center.lng, target.center.lng]
                     lats = [source.center.lat, target.center.lat]
-                    self.maxLat = max(self.maxLat, max(lats))
-                    self.minLng = min(self.minLng, min(lngs))
+                    self.maxLat = max(self.maxLat, source.center.lat, target.center.lat)
+                    self.minLat = min(self.minLat, source.center.lat, target.center.lat)
+                    self.maxLng = max(self.maxLng, source.center.lng, target.center.lng)
+                    self.minLng = min(self.minLng, source.center.lng, target.center.lng)
                     plt.plot(lngs, lats, color='k')
                 else:
                     print "a road is incomplete"
 
+            # get Google static map
+            genGooglemap(self.maxLat, self.minLat, self.minLng, self.maxLng)
+
+            # parameters = genGoogleMapAPIParameter(self.maxLat, self.minLat, self.minLng, self.maxLng)
+            # imgFilename = "map.png"
+            # getGoogleStaticMap(parameters, imgFilename)
+            # image = plt.imread(imgFilename)
+
             # plot cars
             self.rightLaneCarPoints, = ax.plot([], [], 'bo', ms=4)
             self.leftLaneCarPoints,  = ax.plot([], [], 'ro', ms=4)
+            self
 
             # plot taxis
             self.taxiPoints, = ax.plot([], [], 'yo', ms=4)
@@ -100,6 +142,57 @@ class AnimatedMap(threading.Thread):
 
             # Notify other thread that the initialization has i
             self.realMap.setAniMapPlotOk(True)
+
+        # def genGooglemap(topLeft, topRight, botLeft, botRight):
+        #     """
+        #     Retrieve four google static map images using the four points and use 1/4 port of each image to
+        #     make a new map image so that we can know the border of the new map.
+        #     :return:
+        #     """
+        #     maps = ["map1.png", "map2.png"]
+        #     for i in range(4):
+        #         parameters = genGoogleMapAPIParameter()
+        #
+        #
+        #
+        # def genGoogleMapAPIParameter(top, bot, left, right):
+        #     parameters = {}
+        #
+        #     # API key
+        #     parameters["key"] = GOOGLE_STATIC_MAP_KEY
+        #
+        #     # center points
+        #     centerLat = (top + bot) / 2
+        #     centerLng = (left + right) / 2
+        #     parameters["center"] = "%f,%f" % (centerLat, centerLng)
+        #
+        #     # image's width and height
+        #     hwRatio = (top - bot) / (right - left)
+        #     width = 640
+        #     height = int(min(640, hwRatio * width))
+        #     parameters["size"] = "%dx%d" % (width, height)
+        #
+        #     # zoom
+        #     parameters["zoom"] = "13"
+        #
+        #     # scale
+        #     parameters["scale"] = "2"
+        #
+        #     # markers for top left, top right, bottom left, bottom right
+        #     topLeft  = "%f,%f" % (top, left)
+        #     topRight = "%f,%f" % (top, right)
+        #     botLeft  = "%f,%f" % (bot, left)
+        #     botRight = "%f,%f" % (bot, right)
+        #     center   = "%f,%f" % (centerLat, centerLng)
+        #     parameters["markers"] = "markers=size:tiny|%s|%s|%s|%s|%s" % (topLeft, topRight, botLeft, botRight, center)
+        #
+        #     # map type: roadmap / satellite / terrain / hybrid
+        #     parameters["maptype"] = "roadmap"
+        #
+        #     for key in parameters:
+        #         print "%s=%s" % (key, parameters[key])
+        #
+        #     return parameters
 
         def animate(i):
             """
@@ -150,6 +243,8 @@ class AnimatedMap(threading.Thread):
                                      [taxi.getCoords()[1] for taxi in taxis if not taxi.called])
 
             # plt.text(self.minLng, self.maxLat, "%d cars" % len(self.realMap.cars))
+
+        # interval draws a new frame every interval milliseconds.
 
         ani = animation.FuncAnimation(fig, animate, init_func=init, interval=30, blit=False)
         plt.show()

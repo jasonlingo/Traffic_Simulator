@@ -6,7 +6,6 @@ from trafficSimulator.AnimatedMap import AnimatedMap
 from TrafficController import TrafficController
 import threading
 import matplotlib.pyplot as plt
-import time
 
 
 if __name__ == '__main__':
@@ -51,7 +50,9 @@ if __name__ == '__main__':
     simulation.start()
 
     # Plot the animated map
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(14, 8))
+
+    fig.set_dpi(85)
     ax.set_aspect(1.0)
     aniMap = AnimatedMap(realMap, env)
     aniMap.plotAnimatedMap(fig, ax)
