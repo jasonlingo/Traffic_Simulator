@@ -5,7 +5,7 @@ from TrafficUtil import GPS_DIST_UNIT
 from TrafficSettings import MAX_SPEED
 from Coordinate import Coordinate
 
-LANE_WIDTH = 0.030 / GPS_DIST_UNIT  # km -> geo unit
+LANE_WIDTH = 0.003 / GPS_DIST_UNIT  # km -> geo unit
 
 
 class Lane(object):
@@ -263,9 +263,3 @@ class Lane(object):
                 lat *= -1
 
         return lat * lngLatRatio, lat
-
-
-# vector = (1, 2)
-# lng, lat = Lane.shiftUnit(vector, 1)
-# print lng, lat
-# print lng * lng + lat * lat

@@ -25,14 +25,14 @@ patch2 = patches.Rectangle((1, 1), 0, 0, fc='b')
 def init():
     ax.add_patch(patch)
     ax.add_patch(patch2)
-    return patch,
+    return patch, patch2
 
 def animate(i):
     patch.set_width(1.2)
     patch.set_height(1.0)
     patch2.set_width(1.2)
     patch2.set_height(1.0)
-    patch.set_xy([x[i], y[i]])
+    patch.center = x[i], y[i]
     patch._angle = -np.rad2deg(yaw[i])
     patch2.set_xy([x2[i], y2[i]])
     return patch, patch2
