@@ -32,7 +32,7 @@ if __name__ == '__main__':
         # experiment.showMap()
 
     # Create a RealMap object and pass it to a Environment object.
-    mapSize = 4500  # number of shapefile data to be read to construct the map
+    mapSize = 3000  # number of shapefile data to be read to construct the map
     realMap = RealMap(SHAPEFILE, mapSize)
     env = Environment(realMap)
     # exp = Experiment(env, TAXI_NUM, CAR_NUM, epsilon=EPSILON, alpha=ALPHA, gamma=GAMMA)

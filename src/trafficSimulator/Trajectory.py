@@ -65,7 +65,18 @@ class Trajectory(object):
     #     # return self.lane.getDirection(self.getRelativePosition())
 
     def getCoords(self):
+        """
+        Return the coordinates for the center of this car.
+        :return: (float, float) longitude and latitude
+        """
         return self.current.lane.getPoint(self.getRelativePosition())
+
+    def getHeadCoords(self):
+        """
+        Return the coordinates of this car's head.
+        :return: (float, float) longitude and latitude
+        """
+        return self.current.lane.getPoint(self.getRelativePosition() + self.car.length / self.current.lane.getLength())
 
     def nextCarDistance(self):
         """

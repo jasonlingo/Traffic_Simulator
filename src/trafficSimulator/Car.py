@@ -1,7 +1,7 @@
 from __future__ import division
 from Trajectory import Trajectory
 from TrafficUtil import *
-from TrafficSettings import CAR_LENGTH
+from TrafficSettings import CAR_LENGTH, CAR_WIDTH
 import math
 import time
 import sys
@@ -39,6 +39,7 @@ class Car(object):
         self.speed = 0                                      # initial speed
         self.maxSpeed = maxSpeed                            # the maximum speed this car can be drove
         self.length = CAR_LENGTH                            # the length (km) of this car
+        self.width = CAR_WIDTH
         self.trajectory = Trajectory(self, lane, position)  # manage the moving trajectory of this car
         self.nextLane = None                                # the next lane this can is going to
         self.preferedLane = None                            # the lane that this car is going to switch
@@ -78,6 +79,13 @@ class Car(object):
         :return: the speed (km/h)
         """
         return self.speed
+
+    def getHeadCoords(self):
+        """
+        Return the coordinates of this car's head.
+        :return: (float, float) latitude and longitude.
+        """
+        return self.trajectory.getHeadCoords()
 
     def getPosition(self):
         """
