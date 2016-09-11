@@ -4,8 +4,10 @@ import matplotlib.patches as patches
 import threading
 import sys
 from DrawUtil import setRectangle
-from TrafficUtil import GPS_DIST_UNIT
+from DrawUtil import GPS_DIST_UNIT
 from GoogleMap import getGoogleStaticMap, genGooglemap
+
+CAR_LEN_MULTI = 7
 
 
 def convertGeoUnit(lat, lng, imageWidth, imageHeight):
@@ -37,7 +39,7 @@ class AnimatedMap(threading.Thread):
         self.intersections = realMap.getIntersections()
         self.cars = self.realMap.getCars()
         self.taxis = self.realMap.getTaxis()
-        # store the patch object for cars and taxis
+        # store the patch (shape) object for cars and taxis
         self.carPatch = {}
 
     def plotAnimatedMap(self, fig, ax):
@@ -169,7 +171,7 @@ class AnimatedMap(threading.Thread):
         #
         #     return parameters
 
-        def animate(_):
+        def animate(i):
             """
             The method is called repeatedly to draw the animation.
             """
@@ -204,7 +206,8 @@ class AnimatedMap(threading.Thread):
                     self.carPatch[car.id] = patch
                 center = car.getCoords()
                 head = car.getHeadCoords()
-                setRectangle(ax, patch, center,  car.length / 40, car.width / 40, head)
+                setRectangle(ax, patch, center,  CAR_LEN_MULTI * car.length / GPS_DIST_UNIT, CAR_LEN_MULTI * car.width / GPS_DIST_UNIT, head)
+                ax.add_patch(patch)
 
                 if car.isTaxi:
                     patch.set_color("y")

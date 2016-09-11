@@ -32,7 +32,7 @@ if __name__ == '__main__':
         # experiment.showMap()
 
     # Create a RealMap object and pass it to a Environment object.
-    mapSize = 3000  # number of shapefile data to be read to construct the map
+    mapSize = 8000  # number of shapefile data to be read to construct the map
     realMap = RealMap(SHAPEFILE, mapSize)
     env = Environment(realMap)
     # exp = Experiment(env, TAXI_NUM, CAR_NUM, epsilon=EPSILON, alpha=ALPHA, gamma=GAMMA)
@@ -50,9 +50,10 @@ if __name__ == '__main__':
     simulation.start()
 
     # Plot the animated map
-    fig, ax = plt.subplots(figsize=(14, 8))
+    fig, ax = plt.subplots(figsize=(14, 4))
+    # plt.tight_layout()
 
-    fig.set_dpi(85)
+    fig.set_dpi(85)  # adjust the subplot size
     ax.set_aspect(1.0)
     aniMap = AnimatedMap(realMap, env)
     aniMap.plotAnimatedMap(fig, ax)
