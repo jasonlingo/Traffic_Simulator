@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib as mpl
-
+from Coordinate import Coordinate
+from TrafficUtil import haversine
 
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
@@ -82,3 +83,8 @@ def getDegree(ptr1, ptr2):
     rads = atan2(dy, dx)
     return degrees(rads)
 
+
+# calculate the approximate GPS distance unit
+p1 = Coordinate(0.0, 1.0)
+p2 = Coordinate(0.0, 0.0)
+GPS_DIST_UNIT = haversine(p1, p2)
