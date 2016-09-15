@@ -1,25 +1,45 @@
+from __future__ import division
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.patches as patches
+from PIL import Image
 import threading
 import sys
 from DrawUtil import setRectangle
 from DrawUtil import GPS_DIST_UNIT
-from GoogleMap import getGoogleStaticMap, genGooglemap
-
-CAR_LEN_MULTI = 7
+from GoogleMap import getBackgroundMap
 
 
-def convertGeoUnit(lat, lng, imageWidth, imageHeight):
+CAR_LEN_MULTI = 15
+
+def convertGeoUnit(lat, lng, latBase, lngBase, gpsW, gpsH, imageH, imageW):
     """
-    Convert geocoding (lat, lng) to the pixel unit of the base image.
-    :param lat:
-    :param lng:
-    :param imageWidth: (float) the width of the background image.
-    :param imageHeight: (float) the height of the background image.
+    Convert geo-coding (lat, lng) to the pixel unit of the base image by
+    computing the ratio of the point to the entire map.
+    The origin for the coordinate system of picture is at the top-left,
+    and bottom-left for the geo-coordinate system (north-west hemisphere).
+    T
+                      north (0~90)
+                         |
+                         |
+     (0~-180) west-------|-------east (0~180)
+                         |
+                         |
+                      south (0~-90)
+
+    :param lat: (float) original latitude
+    :param lng: (float) original longitude
+    :param latBase: (float) the base of the latitude
+    :param lngBase: (float) the base of the longitude
+    :param gpsW: (float) the width of the gps system
+    :param gpsH: (float) the height of the gps system
+    :param imageW: (float) the width of the background image.
+    :param imageH: (float) the height of the background image.
     :return: the (x, y) position.
     """
-    pass
+    heightPos = (lat - latBase) / gpsH * imageH
+    widthPos  = (lng - lngBase) / gpsW * imageW
+    return heightPos, widthPos
 
 
 class AnimatedMap(threading.Thread):
@@ -42,19 +62,29 @@ class AnimatedMap(threading.Thread):
         # store the patch (shape) object for cars and taxis
         self.carPatch = {}
 
-    def plotAnimatedMap(self, fig, ax):
-        """
-        This method will be continuously run
-        :return:
-        """
-        print "Plotting animated map"
-
         self.cnt = 0
         self.printCrashCar = False
         self.maxLat = -sys.maxint
         self.minLat = sys.maxint
         self.maxLng = -sys.maxint
         self.minLng = sys.maxint
+        self.gpsW = None
+        self.gpsH = None
+        self.imageW = None
+        self.imageH = None
+
+    def latToPixel(self, lat):
+        return (lat - self.maxLat) / self.gpsH * self.imageH
+
+    def lngToPixel(self, lng):
+        return (lng - self.minLng) / self.gpsW * self.imageW
+
+    def plotAnimatedMap(self, fig, ax):
+        """
+        This method will be continuously run
+        :return:
+        """
+        print "Plotting animated map"
 
         def init():
             """
@@ -63,27 +93,67 @@ class AnimatedMap(threading.Thread):
             """
             print "Initialize animation"
 
-            # plot roads
+            # collect gps points of roads
+            allLngs = []
+            allLats = []
             for rd in self.roads.values():
                 source = rd.getSource()
                 target = rd.getTarget()
                 if source and target:
-                    lngs = [source.center.lng, target.center.lng]
-                    lats = [source.center.lat, target.center.lat]
+                    allLngs.append( [source.center.lng, target.center.lng] )
+                    allLats.append( [source.center.lat, target.center.lat] )
                     self.maxLat = max(self.maxLat, source.center.lat, target.center.lat)
                     self.minLat = min(self.minLat, source.center.lat, target.center.lat)
                     self.maxLng = max(self.maxLng, source.center.lng, target.center.lng)
                     self.minLng = min(self.minLng, source.center.lng, target.center.lng)
-                    plt.plot(lngs, lats, color='k')
-                else:
-                    print "a road is incomplete"
+                    # plt.plot(lngs, lats, color='k')
 
-            # get Google static map
-            # genGooglemap(self.maxLat, self.minLat, self.minLng, self.maxLng)
+            # get map's height and width in GPS unit
+            self.gpsH = self.minLat - self.maxLat  # top is the baseline
+            self.gpsW = self.maxLng - self.minLng  # left is the baseline
+
+            print "top, bot, left, right =", self.maxLat, self.minLat, self.minLng, self.maxLng
+
+            # get Google static map and show it as a background image
+            mapCenter = ( (self.maxLat + self.minLat) / 2.0, (self.maxLng + self.minLng) / 2.0 )
+            baseMapName = getBackgroundMap(mapCenter, abs(self.maxLat - self.minLat), abs(self.maxLng - self.minLng))
+            resizedMapName = "./pic/map/resized_map.png"
+
+            baseImg = Image.open(baseMapName)
+            width, height = baseImg.size  # width, height
+            # ratio = 0.8
+            # size = width * ratio, height * ratio
+            # baseImg.thumbnail(size, Image.ANTIALIAS)
+            marginH = 85
+            extraH = 0
+            extraW = int(extraH * width / height)
+            marginW = int(marginH * width / height)
+            baseImg.crop((marginW + extraW,
+                          marginH + extraH,
+                          width - marginW,
+                          height - marginH))\
+                   .save(resizedMapName, "png")
+
+            img = plt.imread(resizedMapName)
+            plt.imshow(img)
+
+            # get image size
+            self.imageW, self.imageH = Image.open(resizedMapName).size
+            print "resized map's size:", self.imageW, self.imageH
+
+            # convert coordination system
+            allLngs = map(lambda x: [self.lngToPixel(x[0]), self.lngToPixel(x[1])], allLngs)
+            allLats = map(lambda x: [self.latToPixel(x[0]), self.latToPixel(x[1])], allLats)
+
+            # plot roads
+            for i in range(len(allLngs)):
+                plt.plot(allLngs[i], allLats[i], color='w', alpha=0.8)
 
             # create rectangle patches for cars and taxis
             for car in self.cars.values() + self.taxis.values():
-                patch = patches.Rectangle(car.getCoords(), 0, 0,  alpha=0.8)
+                center = car.getCoords()
+                newCenter = (self.lngToPixel(center[0]), self.latToPixel(center[1]))
+                patch = patches.Rectangle(newCenter, 0, 0,  alpha=0.8)
                 self.carPatch[car.id] = patch
                 ax.add_patch(patch)
 
@@ -99,7 +169,9 @@ class AnimatedMap(threading.Thread):
             # goalLng, goalLat = self.realMap.getGoalPosition()
             # self.goalPoint, = ax.plot([goalLng], [goalLat], 'r*', ms=9)
 
+            # ===============================================
             # plot sink and source points
+            # ===============================================
             # sinkLng = []
             # sinkLat = []
             # sourceLng = []
@@ -118,62 +190,13 @@ class AnimatedMap(threading.Thread):
 
 
             # Notify other thread that the initialization has i
+            print "Animated map initialization finished"
             self.realMap.setAniMapPlotOk(True)
-
-        # def genGooglemap(topLeft, topRight, botLeft, botRight):
-        #     """
-        #     Retrieve four google static map images using the four points and use 1/4 port of each image to
-        #     make a new map image so that we can know the border of the new map.
-        #     :return:
-        #     """
-        #     maps = ["map1.png", "map2.png"]
-        #     for i in range(4):
-        #         parameters = genGoogleMapAPIParameter()
-        #
-        #
-        #
-        # def genGoogleMapAPIParameter(top, bot, left, right):
-        #     parameters = {}
-        #
-        #     # API key
-        #     parameters["key"] = GOOGLE_STATIC_MAP_KEY
-        #
-        #     # center points
-        #     centerLat = (top + bot) / 2
-        #     centerLng = (left + right) / 2
-        #     parameters["center"] = "%f,%f" % (centerLat, centerLng)
-        #
-        #     # image's width and height
-        #     hwRatio = (top - bot) / (right - left)
-        #     width = 640
-        #     height = int(min(640, hwRatio * width))
-        #     parameters["size"] = "%dx%d" % (width, height)
-        #
-        #     # zoom
-        #     parameters["zoom"] = "13"
-        #
-        #     # scale
-        #     parameters["scale"] = "2"
-        #
-        #     # markers for top left, top right, bottom left, bottom right
-        #     topLeft  = "%f,%f" % (top, left)
-        #     topRight = "%f,%f" % (top, right)
-        #     botLeft  = "%f,%f" % (bot, left)
-        #     botRight = "%f,%f" % (bot, right)
-        #     center   = "%f,%f" % (centerLat, centerLng)
-        #     parameters["markers"] = "markers=size:tiny|%s|%s|%s|%s|%s" % (topLeft, topRight, botLeft, botRight, center)
-        #
-        #     # map type: roadmap / satellite / terrain / hybrid
-        #     parameters["maptype"] = "roadmap"
-        #
-        #     for key in parameters:
-        #         print "%s=%s" % (key, parameters[key])
-        #
-        #     return parameters
 
         def animate(i):
             """
             The method is called repeatedly to draw the animation.
+            :param i: (int) the number of times that this function is called.
             """
             # delete unused patches
             deletePatch = []
@@ -191,9 +214,9 @@ class AnimatedMap(threading.Thread):
                     lats = []
                     for car in crashedCar:
                         coords = car.getCoords()
-                        lngs.append(coords[0])
-                        lats.append(coords[1])
-                    self.goalPoint, = ax.plot(lngs, lats, 'y*', ms=8)  # TODO: change the shape
+                        lngs.append(self.lngToPixel(coords[0]))
+                        lats.append(self.latToPixel(coords[1]))
+                    self.goalPoint, = ax.plot(lngs, lats, 'y*', ms=8)
 
             # plot cars
             for car in self.cars.values() + self.taxis.values():
@@ -202,11 +225,20 @@ class AnimatedMap(threading.Thread):
                 if car.id in self.carPatch:
                     patch = self.carPatch[car.id]
                 else:
-                    patch = patches.Rectangle(car.getCoords(), 0, 0,  alpha=0.8)
+                    coords = car.getCoords()
+                    newCoords = (self.lngToPixel(coords[0]), self.latToPixel(coords[1]))
+                    patch = patches.Rectangle(newCoords, 0, 0, alpha=0.8)
                     self.carPatch[car.id] = patch
                 center = car.getCoords()
+                newCenter = (self.lngToPixel(center[0]), self.latToPixel(center[1]))
                 head = car.getHeadCoords()
-                setRectangle(ax, patch, center,  CAR_LEN_MULTI * car.length / GPS_DIST_UNIT, CAR_LEN_MULTI * car.width / GPS_DIST_UNIT, head)
+                newHead = (self.lngToPixel(head[0]), self.latToPixel(head[1]))
+                setRectangle(ax,
+                             patch,
+                             newCenter,
+                             CAR_LEN_MULTI * car.length / GPS_DIST_UNIT,
+                             CAR_LEN_MULTI * car.width / GPS_DIST_UNIT,
+                             newHead)
                 ax.add_patch(patch)
 
                 if car.isTaxi:
@@ -216,8 +248,6 @@ class AnimatedMap(threading.Thread):
                         patch.set_color("r")
                     else:
                         patch.set_color("b")
-
-
 
             # cars = []
             # taxis = []
@@ -253,7 +283,7 @@ class AnimatedMap(threading.Thread):
 
 
         # interval: draws a new frame every interval milliseconds
-        ani = animation.FuncAnimation(fig, animate, init_func=init, interval=30, blit=False)
+        _ = animation.FuncAnimation(fig, animate, init_func=init, interval=30, blit=False)
         plt.show()
 
 

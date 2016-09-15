@@ -51,7 +51,6 @@ if __name__ == '__main__':
 
     # Plot the animated map
     fig, ax = plt.subplots(figsize=(14, 4))
-    # plt.tight_layout()
 
     fig.set_dpi(85)  # adjust the subplot size
     ax.set_aspect(1.0)
