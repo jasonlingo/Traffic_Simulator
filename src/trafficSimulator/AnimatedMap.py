@@ -10,36 +10,36 @@ from DrawUtil import GPS_DIST_UNIT
 from GoogleMap import getBackgroundMap
 
 
-CAR_LEN_MULTI = 15
+CAR_LEN_MULTI = 20
 
-def convertGeoUnit(lat, lng, latBase, lngBase, gpsW, gpsH, imageH, imageW):
-    """
-    Convert geo-coding (lat, lng) to the pixel unit of the base image by
-    computing the ratio of the point to the entire map.
-    The origin for the coordinate system of picture is at the top-left,
-    and bottom-left for the geo-coordinate system (north-west hemisphere).
-    T
-                      north (0~90)
-                         |
-                         |
-     (0~-180) west-------|-------east (0~180)
-                         |
-                         |
-                      south (0~-90)
-
-    :param lat: (float) original latitude
-    :param lng: (float) original longitude
-    :param latBase: (float) the base of the latitude
-    :param lngBase: (float) the base of the longitude
-    :param gpsW: (float) the width of the gps system
-    :param gpsH: (float) the height of the gps system
-    :param imageW: (float) the width of the background image.
-    :param imageH: (float) the height of the background image.
-    :return: the (x, y) position.
-    """
-    heightPos = (lat - latBase) / gpsH * imageH
-    widthPos  = (lng - lngBase) / gpsW * imageW
-    return heightPos, widthPos
+# def convertGeoUnit(lat, lng, latBase, lngBase, gpsW, gpsH, imageH, imageW):
+#     """
+#     Convert geo-coding (lat, lng) to the pixel unit of the base image by
+#     computing the ratio of the point to the entire map.
+#     The origin for the coordinate system of picture is at the top-left,
+#     and bottom-left for the geo-coordinate system (north-west hemisphere).
+#     T
+#                       north (0~90)
+#                          |
+#                          |
+#      (0~-180) west-------|-------east (0~180)
+#                          |
+#                          |
+#                       south (0~-90)
+#
+#     :param lat: (float) original latitude
+#     :param lng: (float) original longitude
+#     :param latBase: (float) the base of the latitude
+#     :param lngBase: (float) the base of the longitude
+#     :param gpsW: (float) the width of the gps system
+#     :param gpsH: (float) the height of the gps system
+#     :param imageW: (float) the width of the background image.
+#     :param imageH: (float) the height of the background image.
+#     :return: the (x, y) position.
+#     """
+#     heightPos = (lat - latBase) / gpsH * imageH
+#     widthPos  = (lng - lngBase) / gpsW * imageW
+#     return heightPos, widthPos
 
 
 class AnimatedMap(threading.Thread):
@@ -135,7 +135,7 @@ class AnimatedMap(threading.Thread):
                    .save(resizedMapName, "png")
 
             img = plt.imread(resizedMapName)
-            plt.imshow(img)
+            # plt.imshow(img)
 
             # get image size
             self.imageW, self.imageH = Image.open(resizedMapName).size
@@ -147,7 +147,7 @@ class AnimatedMap(threading.Thread):
 
             # plot roads
             for i in range(len(allLngs)):
-                plt.plot(allLngs[i], allLats[i], color='w', alpha=0.8)
+                plt.plot(allLngs[i], allLats[i], color='b', alpha=0.8)
 
             # create rectangle patches for cars and taxis
             for car in self.cars.values() + self.taxis.values():
