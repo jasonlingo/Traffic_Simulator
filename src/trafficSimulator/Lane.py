@@ -5,7 +5,7 @@ from DrawUtil import GPS_DIST_UNIT
 from TrafficSettings import MAX_SPEED
 from Coordinate import Coordinate
 
-LANE_WIDTH = 0.020 / GPS_DIST_UNIT  # km -> geo unit
+LANE_WIDTH = 0.020 / GPS_DIST_UNIT # km -> geo unit
 
 
 class Lane(object):

@@ -46,5 +46,7 @@ CAR_LENGTH = 0.0045
 CAR_WIDTH = 0.0015
 """The width (in km) of a car"""
 
-POI_LAMBDA = 0.0000
+POI_LAMBDA = 0.00005
 """lambda parameter for poisson arrival for the new car comes into the map"""
+
+

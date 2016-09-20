@@ -10,7 +10,9 @@ from DrawUtil import GPS_DIST_UNIT
 from GoogleMap import getBackgroundMap
 
 
-CAR_LEN_MULTI = 20
+CAR_LEN_MULTI = 18000
+
+colors = {"myYellow": (1, 1, 0.3)}
 
 # def convertGeoUnit(lat, lng, latBase, lngBase, gpsW, gpsH, imageH, imageW):
 #     """
@@ -73,6 +75,8 @@ class AnimatedMap(threading.Thread):
         self.imageW = None
         self.imageH = None
 
+        self.MAP_DIST_UNIT = None
+
     def latToPixel(self, lat):
         return (lat - self.maxLat) / self.gpsH * self.imageH
 
@@ -124,7 +128,7 @@ class AnimatedMap(threading.Thread):
             # ratio = 0.8
             # size = width * ratio, height * ratio
             # baseImg.thumbnail(size, Image.ANTIALIAS)
-            marginH = 85
+            marginH = 137
             extraH = 0
             extraW = int(extraH * width / height)
             marginW = int(marginH * width / height)
@@ -135,7 +139,7 @@ class AnimatedMap(threading.Thread):
                    .save(resizedMapName, "png")
 
             img = plt.imread(resizedMapName)
-            # plt.imshow(img)
+            plt.imshow(img, zorder=0)
 
             # get image size
             self.imageW, self.imageH = Image.open(resizedMapName).size
@@ -147,23 +151,23 @@ class AnimatedMap(threading.Thread):
 
             # plot roads
             for i in range(len(allLngs)):
-                plt.plot(allLngs[i], allLats[i], color='b', alpha=0.8)
+                plt.plot(allLngs[i], allLats[i], color='w', alpha=0.7)
 
             # create rectangle patches for cars and taxis
             for car in self.cars.values() + self.taxis.values():
                 center = car.getCoords()
                 newCenter = (self.lngToPixel(center[0]), self.latToPixel(center[1]))
-                patch = patches.Rectangle(newCenter, 0, 0,  alpha=0.8)
+                patch = patches.Rectangle(newCenter, 0, 0,  alpha=1.0)
                 self.carPatch[car.id] = patch
                 ax.add_patch(patch)
 
             # plot cars
-            self.rightLaneCarPoints, = ax.plot([], [], 'bo', ms=4)
-            self.leftLaneCarPoints,  = ax.plot([], [], 'ro', ms=4)
+            self.rightLaneCarPoints, = ax.plot([], [], 'bo', ms=4, zorder=1)
+            self.leftLaneCarPoints,  = ax.plot([], [], 'ro', ms=4, zorder=1)
 
             # plot taxis
-            self.taxiPoints, = ax.plot([], [], 'yo', ms=4)
-            self.calledTaxiPoints, = ax.plot([], [], 'ro', ms=4)
+            self.taxiPoints, = ax.plot([], [], color=colors["myYellow"], ms=4, zorder=1)
+            self.calledTaxiPoints, = ax.plot([], [], color=colors["myYellow"], ms=4, zorder=1)
 
             # plot goal location
             # goalLng, goalLat = self.realMap.getGoalPosition()
@@ -227,7 +231,7 @@ class AnimatedMap(threading.Thread):
                 else:
                     coords = car.getCoords()
                     newCoords = (self.lngToPixel(coords[0]), self.latToPixel(coords[1]))
-                    patch = patches.Rectangle(newCoords, 0, 0, alpha=0.8)
+                    patch = patches.Rectangle(newCoords, 0, 0, alpha=1.0)
                     self.carPatch[car.id] = patch
                 center = car.getCoords()
                 newCenter = (self.lngToPixel(center[0]), self.latToPixel(center[1]))
@@ -236,13 +240,13 @@ class AnimatedMap(threading.Thread):
                 setRectangle(ax,
                              patch,
                              newCenter,
-                             CAR_LEN_MULTI * car.length / GPS_DIST_UNIT,
-                             CAR_LEN_MULTI * car.width / GPS_DIST_UNIT,
+                             CAR_LEN_MULTI * car.length / GPS_DIST_UNIT * self.gpsH * self.imageH,
+                             CAR_LEN_MULTI * car.width / GPS_DIST_UNIT * self.gpsH * self.imageH,
                              newHead)
                 ax.add_patch(patch)
 
                 if car.isTaxi:
-                    patch.set_color("y")
+                    patch.set_color(colors["myYellow"])
                 else:
                     if car.isOnRightLane():
                         patch.set_color("r")

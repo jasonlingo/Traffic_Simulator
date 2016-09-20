@@ -100,7 +100,7 @@ def genGoogleMapAPIParameter(lat, lng, hwRatio):
     parameters["scale"] = "2"
 
     # map type: roadmap / satellite / terrain / hybrid
-    parameters["maptype"] = "hybrid"
+    parameters["maptype"] = "satellite"
 
     return parameters
 
