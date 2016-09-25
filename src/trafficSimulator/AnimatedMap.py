@@ -118,14 +118,15 @@ class AnimatedMap(threading.Thread):
             # get Google static map and show it as a background image
             mapCenter = ((self.maxLat + self.minLat) / 2.0, (self.maxLng + self.minLng) / 2.0)
             baseMapName = getBackgroundMap(mapCenter, abs(self.maxLat - self.minLat), abs(self.maxLng - self.minLng))
-            resizedMapName = "./pic/map/resized_map.png"
+            resizedMapName = "./pic/map/resized_map.png"  # TODO: change to parameter
 
+            # adjust the static map size
             baseImg = Image.open(baseMapName)
             width, height = baseImg.size  # width, height
             # ratio = 0.8
             # size = width * ratio, height * ratio
             # baseImg.thumbnail(size, Image.ANTIALIAS)
-            marginH = 137
+            marginH = 137  # the pixel size for the margin of the cropped image
             extraH = 0
             extraW = int(extraH * width / height)
             marginW = int(marginH * width / height)

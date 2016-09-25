@@ -5,11 +5,14 @@
 # The total number of learning trials
 EXP_NUM = 30000
 
-# The total number of taxis in the system
+# The initial number of taxis in the system
 TAXI_NUM = 20
 
-# The total number of cars in the system
-CAR_NUM = 20
+# The initial number of cars in the system
+CAR_NUM = 50
+
+# Map size, the number of shape file record to be read
+MAP_SIZE = 8000
 
 # The threshold of time (minute) for the system to call a new taxi that
 # might arrive the goal location with shorter time.
