@@ -1,11 +1,13 @@
 from __future__ import division
-import sys
-import math
-from DrawUtil import GPS_DIST_UNIT
-from TrafficSettings import MAX_SPEED
-from Coordinate import Coordinate
 
-LANE_WIDTH = 0.020 / GPS_DIST_UNIT  # km -> geo unit
+import math
+import sys
+
+from Coordinate import Coordinate
+from DrawUtil import GPS_DIST_UNIT
+from src.trafficSimulator.config import MAX_SPEED
+
+LANE_WIDTH = 0.020 / GPS_DIST_UNIT # km -> geo unit
 
 
 class Lane(object):

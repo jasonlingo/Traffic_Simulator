@@ -36,8 +36,8 @@ if __name__ == '__main__':
     realMap = RealMap(SHAPEFILE, mapSize)
     env = Environment(realMap)
     # exp = Experiment(env, TAXI_NUM, CAR_NUM, epsilon=EPSILON, alpha=ALPHA, gamma=GAMMA)
-    initCarNum = 10
-    initTaxiNum = 10
+    initCarNum = 100
+    initTaxiNum = 50
     trafficCtrl = TrafficController(env, initCarNum, initTaxiNum)
 
     # For debugging usage. If debugging mode is turned on, then it will not
@@ -51,10 +51,9 @@ if __name__ == '__main__':
 
     # Plot the animated map
     fig, ax = plt.subplots(figsize=(14, 4))
-    # plt.tight_layout()
 
     fig.set_dpi(85)  # adjust the subplot size
-    ax.set_aspect(1.0)
+    ax.set_aspect(2.0)
     aniMap = AnimatedMap(realMap, env)
     aniMap.plotAnimatedMap(fig, ax)
 

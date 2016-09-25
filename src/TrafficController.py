@@ -1,6 +1,6 @@
 import time
-from trafficSimulator.TrafficSettings import POI_LAMBDA
-from trafficSimulator.Navigation import Navigator
+
+from src.trafficSimulator.config import POI_LAMBDA
 
 
 class TrafficController(object):

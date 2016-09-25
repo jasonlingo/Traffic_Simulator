@@ -1,10 +1,28 @@
 from __future__ import division
-from TrafficSettings import GOOGLE_STATIC_MAP_API_ADDRESS, GOOGLE_STATIC_MAP_KEY
+import os
 import requests
 from time import sleep
 from PIL import Image
+from src.trafficSimulator.config import GOOGLE_STATIC_MAP_API_ADDRESS
+from src.trafficSimulator.config import GOOGLE_STATIC_MAP_KEY
+from src.trafficSimulator.config import MAP_FOLDER, BG_MAP_NAME
 
 
+def getBackgroundMap(center, height, width):
+    """
+    Download the static map centered at the given position (lat, lng) from Google Map API.
+    Save the downloaded map and return its file address.
+    :param center: (lat, lng)
+    :return: file address of the downloaded map.
+    """
+    mapFolder = os.getcwd() + MAP_FOLDER
+    if not os.path.exists(mapFolder):
+        os.makedirs(mapFolder)
+
+    filename = mapFolder + "/" + BG_MAP_NAME
+    parameters = genGoogleMapAPIParameter(center[0], center[1], height / width)
+    getGoogleStaticMap(parameters, filename)
+    return filename
 
 def genGooglemap(top, bot, left, right):
     """
@@ -15,7 +33,10 @@ def genGooglemap(top, bot, left, right):
     # height / width
     hwRatio = (top - bot) / (right - left)
     # file names
-    images = ["map0.png", "map1.png", "map2.png", "map3.png"]
+    images = [MAP_FOLDER + "/topLeft.png",
+              MAP_FOLDER + "/topRight.png",
+              MAP_FOLDER + "/botLeft.png",
+              MAP_FOLDER + "/botRight.png"]
     # centers for the four map images
     centers = [(top, left), (top, right), (bot, left), (bot, right)]
 
@@ -29,7 +50,7 @@ def genGooglemap(top, bot, left, right):
         width = img.size[0]
         height = img.size[1]
         if i == 0:
-            box = (int(width / 2), int(height / 2), width, height)
+            box = (int(width / 2), int(height / 2), width, height) # left, top, right, bot
         elif i == 1:
             box = (0, int(height / 2), int(width / 2), height)
         elif i == 2:
@@ -41,10 +62,10 @@ def genGooglemap(top, bot, left, right):
         newImg.save(images[i])
 
     # merge four sub-maps
-    img = Image.open(images[0])
-    width = img.size[0]
-    height = img.size[1]
+    img = Image.open(images[0]).size
+    width, height = img.size
     img.close()
+
     mergedImage = Image.new('RGB', (width * 2, height * 2))
     coords = [
         (0, 0),
@@ -69,17 +90,16 @@ def genGoogleMapAPIParameter(lat, lng, hwRatio):
     # image's width and height
     width = 640
     height = int(min(640, hwRatio * width))
-    # height = 640
     parameters["size"] = "%dx%d" % (width, height)
 
-    # zoom
+    # zoom: 0-21 = entire map-detail
     parameters["zoom"] = "13"
 
     # scale
     parameters["scale"] = "2"
 
     # map type: roadmap / satellite / terrain / hybrid
-    parameters["maptype"] = "roadmap"
+    parameters["maptype"] = "satellite"
 
     return parameters
 
@@ -100,7 +120,7 @@ def getGoogleStaticMap(parameters, filename):
 
     # generate request url with parameters
     # url = url.format(**parameters)
-    print url
+    print url  # for checking correctness
 
     # get image from the Internet
     res = requests.session().get(url)
@@ -113,4 +133,25 @@ def getGoogleStaticMap(parameters, filename):
 
 
 # for testing
-#getGoogleStaticMap(39.327503, -76.617698, "googlemap")
+# center = (39.327503, -76.617698)
+# filename = getBackgroundMap(center, 4, 6)
+# img = plt.imread(filename)
+# plt.imshow(img)
+# plt.show()
+
+
+"""
+top, bot, left, right
+38.9150644378 38.881276216 -77.057412562 -76.9936787843
+"""
+topLeft = (38.9150644378, -77.057412562)
+topRight = (38.9150644378, -76.9936787843)
+botLeft = (38.881276216, -77.057412562)
+botRight = (38.881276216, -76.9936787843)
+centers = [topLeft, topRight, botLeft, botRight]
+
+filename = ["pic/topLeft.png", "pic/topRight.png", "pic/botLeft.png", "pic/botRight.png"]
+hwRatio = 2/3
+# for i in range(4):
+#     param = genGoogleMapAPIParameter(centers[i][0], centers[i][1], hwRatio)
+#     getGoogleStaticMap(param, filename[i])

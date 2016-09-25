@@ -1,8 +1,9 @@
 import random
-from math import radians, cos, sin, asin, sqrt, atan2, pi
-from TrafficSettings import *
 from collections import defaultdict
+from math import radians, cos, sin, asin, sqrt, atan2, pi
+
 from Coordinate import Coordinate
+from src.trafficSimulator.config import *
 
 
 class Traffic(object):
@@ -64,9 +65,9 @@ def haversine(point1, point2):
 
 
 # calculate the approximate GPS distance unit
-# p1 = Coordinate(0.0, 1.0)
-# p2 = Coordinate(0.0, 0.0)
-# GPS_DIST_UNIT = haversine(p1, p2)
+p1 = Coordinate(0.0, 1.0)
+p2 = Coordinate(0.0, 0.0)
+GPS_DIST_UNIT = haversine(p1, p2)
 
 
 def distToGPSDiff(length):

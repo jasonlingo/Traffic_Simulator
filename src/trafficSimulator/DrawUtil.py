@@ -88,3 +88,4 @@ def getDegree(ptr1, ptr2):
 p1 = Coordinate(0.0, 1.0)
 p2 = Coordinate(0.0, 0.0)
 GPS_DIST_UNIT = haversine(p1, p2)
+print "GPS_DIST_UNIT:", GPS_DIST_UNIT

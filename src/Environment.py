@@ -1,12 +1,13 @@
 from __future__ import division
-import sys
+
 import os
+import sys
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import math
 import random
-from trafficSimulator.TrafficSettings import CLOSE_CRASH_LANE, CLOSE_ALL_CRASH_LANES
-from trafficSimulator.Navigation import Navigator
+from src.trafficSimulator.config import CLOSE_ALL_CRASH_LANES
 from trafficSimulator.TrafficUtil import CarType
 from trafficSimulator.RealMap import RealMap
 from trafficSimulator.Car import Car

@@ -1,9 +1,13 @@
 from __future__ import division
-from TrafficUtil import Traffic, RoadType, calcVectAngle, haversine
-from Lane import Lane
-from TrafficSettings import MAX_ROAD_LANE_NUM
+
 import sys
+
 import numpy as np
+
+from Lane import Lane
+from TrafficUtil import Traffic, RoadType, calcVectAngle, haversine
+from src.trafficSimulator.config import MAX_ROAD_LANE_NUM
+
 
 class Road(object):
     """
