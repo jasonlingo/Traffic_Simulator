@@ -104,22 +104,19 @@ class AnimatedMap(threading.Thread):
                 source = rd.getSource()
                 target = rd.getTarget()
                 if source and target:
-                    allLngs.append( [source.center.lng, target.center.lng] )
-                    allLats.append( [source.center.lat, target.center.lat] )
+                    allLngs.append([source.center.lng, target.center.lng])
+                    allLats.append([source.center.lat, target.center.lat])
                     self.maxLat = max(self.maxLat, source.center.lat, target.center.lat)
                     self.minLat = min(self.minLat, source.center.lat, target.center.lat)
                     self.maxLng = max(self.maxLng, source.center.lng, target.center.lng)
                     self.minLng = min(self.minLng, source.center.lng, target.center.lng)
-                    # plt.plot(lngs, lats, color='k')
 
             # get map's height and width in GPS unit
             self.gpsH = self.minLat - self.maxLat  # top is the baseline
             self.gpsW = self.maxLng - self.minLng  # left is the baseline
 
-            print "top, bot, left, right =", self.maxLat, self.minLat, self.minLng, self.maxLng
-
             # get Google static map and show it as a background image
-            mapCenter = ( (self.maxLat + self.minLat) / 2.0, (self.maxLng + self.minLng) / 2.0 )
+            mapCenter = ((self.maxLat + self.minLat) / 2.0, (self.maxLng + self.minLng) / 2.0)
             baseMapName = getBackgroundMap(mapCenter, abs(self.maxLat - self.minLat), abs(self.maxLng - self.minLng))
             resizedMapName = "./pic/map/resized_map.png"
 

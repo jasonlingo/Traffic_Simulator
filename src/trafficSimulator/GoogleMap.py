@@ -1,12 +1,11 @@
 from __future__ import division
-from TrafficSettings import GOOGLE_STATIC_MAP_API_ADDRESS, GOOGLE_STATIC_MAP_KEY
-from config import MAP_FOLDER, BG_MAP_NAME
+import os
 import requests
 from time import sleep
 from PIL import Image
-import os
-import matplotlib.pyplot as plt
-
+from src.trafficSimulator.config import GOOGLE_STATIC_MAP_API_ADDRESS
+from src.trafficSimulator.config import GOOGLE_STATIC_MAP_KEY
+from src.trafficSimulator.config import MAP_FOLDER, BG_MAP_NAME
 
 
 def getBackgroundMap(center, height, width):

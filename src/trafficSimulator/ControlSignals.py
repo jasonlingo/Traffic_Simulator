@@ -1,9 +1,12 @@
-from TrafficSettings import *
-import random
-import numpy as np
-import sys
 import math
+import random
+import sys
+
+import numpy as np
+
 from TrafficUtil import Traffic
+from src.trafficSimulator.config import *
+
 
 class ControlSignals(object):
 

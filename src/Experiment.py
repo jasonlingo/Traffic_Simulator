@@ -1,5 +1,6 @@
-import sys
 import os
+import sys
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import math
@@ -7,7 +8,7 @@ from QLearning import QLearning
 from Dijkstra import dijkstraSearch, dijkstraTrafficTime
 from DispatchQL import DispatchQL
 from Settings import MIN_EPSILON
-from trafficSimulator.TrafficSettings import MAX_SPEED
+from src.trafficSimulator.config import MAX_SPEED
 
 class Experiment(object):
     """

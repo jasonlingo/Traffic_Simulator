@@ -1,8 +1,9 @@
 import random
-from math import radians, cos, sin, asin, sqrt, atan2, pi
-from TrafficSettings import *
 from collections import defaultdict
+from math import radians, cos, sin, asin, sqrt, atan2, pi
+
 from Coordinate import Coordinate
+from src.trafficSimulator.config import *
 
 
 class Traffic(object):

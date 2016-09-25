@@ -1,10 +1,12 @@
 from __future__ import division
-from Trajectory import Trajectory
-from TrafficUtil import *
-from TrafficSettings import CAR_LENGTH, CAR_WIDTH
+
 import math
-import time
 import sys
+import time
+
+from TrafficUtil import *
+from Trajectory import Trajectory
+from src.trafficSimulator.config import CAR_LENGTH, CAR_WIDTH
 
 UPDATE_ROUTE_TIME = 120  # second
 
