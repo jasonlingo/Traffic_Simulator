@@ -38,7 +38,7 @@ from TrafficUtil import haversine
 #
 # plt.show()
 
-def setRectangle(ax, patch, center, width, height, head):
+def setRectangle(ax, patch, center, width, height, head, flipCoord):
     """
     Make a rotated rectangle according to the given center and the degree between
     the center and the head.
@@ -50,10 +50,11 @@ def setRectangle(ax, patch, center, width, height, head):
     :param height: (float)
     :param head: (float, float) the longitude and latitude for calculating the rotated degree.
     :param color: (str) the color for this rectangle
+    :param flipCoord: (boolean) True to change the GPS coordination system to pixel coordination system.
     :return: a rectangle
     """
     # calculate the degree
-    deg = getDegree(center, head)
+    deg = getDegree(center, head, flipCoord)
 
     # calculate the rotation
     ts = ax.transData
@@ -71,15 +72,34 @@ def setRectangle(ax, patch, center, width, height, head):
     patch.set_transform(transform)
 
 
-def getDegree(ptr1, ptr2):
+def getDegree(ptr1, ptr2, flipCoord):
     """
     Calculate the degree of the vector p1 -> p2.
-    :param ptr1:
-    :param ptr2:
+
+    The GPS coordination system
+     ^
+     |
+     |
+     |________>
+    0
+
+    The pixel coordination system
+
+    0 ________>
+     |
+     |
+     |
+
+    :param ptr1: (longitude, latitude)
+    :param ptr2: (longitude, latitude)
+    :param flipCoord: (boolean) True to change the GPS coordination system to pixel coordination system.
     :return:
     """
     dx = ptr2[0] - ptr1[0]
-    dy = ptr2[1] - ptr1[1]
+    if flipCoord:
+        dy = ptr1[1] - ptr2[1]
+    else:
+        dy = ptr2[1] - ptr1[1]
     rads = atan2(dy, dx)
     return degrees(rads)
 

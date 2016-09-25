@@ -74,8 +74,9 @@ class AnimatedMap(threading.Thread):
         self.gpsH = None
         self.imageW = None
         self.imageH = None
-
+        self.flipCoord = True  # when using a photo as the background image, set this to True
         self.MAP_DIST_UNIT = None
+
 
     def latToPixel(self, lat):
         return (lat - self.maxLat) / self.gpsH * self.imageH
@@ -191,7 +192,7 @@ class AnimatedMap(threading.Thread):
             # self.sourcePoint, = ax.plot(sourceLng, sourceLat, 'kD', ms=2)
 
 
-            # Notify other thread that the initialization has i
+            # Notify other thread that the initialization has finished
             print "Animated map initialization finished"
             self.realMap.setAniMapPlotOk(True)
 
@@ -240,8 +241,9 @@ class AnimatedMap(threading.Thread):
                              newCenter,
                              CAR_LEN_MULTI * car.length / GPS_DIST_UNIT * self.gpsH * self.imageH,
                              CAR_LEN_MULTI * car.width / GPS_DIST_UNIT * self.gpsH * self.imageH,
-                             newHead)
+                             newHead, self.flipCoord)
                 ax.add_patch(patch)
+
 
                 if car.isTaxi:
                     patch.set_color(colors["myYellow"])
