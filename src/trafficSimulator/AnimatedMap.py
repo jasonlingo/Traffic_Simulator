@@ -74,8 +74,9 @@ class AnimatedMap(threading.Thread):
         self.gpsH = None
         self.imageW = None
         self.imageH = None
-
+        self.flipCoord = True  # when using a photo as the background image, set this to True
         self.MAP_DIST_UNIT = None
+
 
     def latToPixel(self, lat):
         return (lat - self.maxLat) / self.gpsH * self.imageH
@@ -118,14 +119,15 @@ class AnimatedMap(threading.Thread):
             # get Google static map and show it as a background image
             mapCenter = ((self.maxLat + self.minLat) / 2.0, (self.maxLng + self.minLng) / 2.0)
             baseMapName = getBackgroundMap(mapCenter, abs(self.maxLat - self.minLat), abs(self.maxLng - self.minLng))
-            resizedMapName = "./pic/map/resized_map.png"
+            resizedMapName = "./pic/map/resized_map.png"  # TODO: change to parameter
 
+            # adjust the static map size
             baseImg = Image.open(baseMapName)
             width, height = baseImg.size  # width, height
             # ratio = 0.8
             # size = width * ratio, height * ratio
             # baseImg.thumbnail(size, Image.ANTIALIAS)
-            marginH = 137
+            marginH = 137  # the pixel size for the margin of the cropped image
             extraH = 0
             extraW = int(extraH * width / height)
             marginW = int(marginH * width / height)
@@ -190,7 +192,7 @@ class AnimatedMap(threading.Thread):
             # self.sourcePoint, = ax.plot(sourceLng, sourceLat, 'kD', ms=2)
 
 
-            # Notify other thread that the initialization has i
+            # Notify other thread that the initialization has finished
             print "Animated map initialization finished"
             self.realMap.setAniMapPlotOk(True)
 
@@ -239,8 +241,9 @@ class AnimatedMap(threading.Thread):
                              newCenter,
                              CAR_LEN_MULTI * car.length / GPS_DIST_UNIT * self.gpsH * self.imageH,
                              CAR_LEN_MULTI * car.width / GPS_DIST_UNIT * self.gpsH * self.imageH,
-                             newHead)
+                             newHead, self.flipCoord)
                 ax.add_patch(patch)
+
 
                 if car.isTaxi:
                     patch.set_color(colors["myYellow"])
