@@ -7,7 +7,6 @@ class Factory(object):
     A class that makes road and intersections. This is a factory design pattern.
     """
 
-
     @classmethod
     def makeRoads(cls, roadType, corners, center):
         """

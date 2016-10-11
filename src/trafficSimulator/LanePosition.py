@@ -1,6 +1,8 @@
 from __future__ import division
-from TrafficUtil import *
 import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from TrafficUtil import *
 
 
 class LanePosition(object):
@@ -92,6 +94,7 @@ class LanePosition(object):
         if self.lane:
             self.free = False
             self.lane.addCarPosition(self)
+            self.getRoad().addCarTime(self.car.id, Traffic.globalTime, self.relativePosition())
 
     def release(self):
         """
@@ -100,6 +103,10 @@ class LanePosition(object):
         if not self.free and self.lane:
             self.free = True
             self.lane.removeCar(self)
+            self.getRoad().deleteCarTime(self.car.id, Traffic.globalTime)
+
+    def updateCarTime(self):
+        self.getRoad().updateCarTime(self.car.id, self.relativePosition())
 
     def getNext(self):
         """

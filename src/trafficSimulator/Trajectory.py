@@ -2,7 +2,6 @@ from __future__ import division
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
 from LanePosition import LanePosition
 
 
@@ -162,14 +161,17 @@ class Trajectory(object):
         """
         if distance < 0:
             return
+
         self.current.position += distance
         self.next.position += distance
-        if self.timeToMakeTurn() and self.canEnterIntersection() and self.isValidTurn():
-            if not self.car.alive:  # go to destination
-                self.car.release()
-                self.car.delete = True
+        self.current.updateCarTime()
 
-            self.startChangingLanes(self.car.popNextLane(), distance)
+        if self.timeToMakeTurn() and self.canEnterIntersection() and self.isValidTurn():
+            if self.car.alive:
+                self.startChangingLanes(self.car.popNextLane(), distance)
+            else:
+                # arrive the destination
+                self.release()
 
         # if self.temp.lane:
         #     tempRelativePosition = self.temp.position / self.temp.lane.length
@@ -181,32 +183,32 @@ class Trajectory(object):
         if self.isChangingLanes and not self.current.free:
             self.current.release()
 
-        if self.isChangingLanes and self.next.free:# and self.temp.position + gap > (self.temp.lane.length if self.temp.lane else 0):
+        if self.isChangingLanes and self.next.free:#and self.temp.position + gap > (self.temp.lane.length if self.temp.lane else 0):
             self.next.acquire()
         if self.isChangingLanes:  # and tempRelativePosition >= 1:
             self.finishChangingLanes()
         if self.current.lane and not self.isChangingLanes and not self.car.nextLane:
             self.car.pickNextLane()
 
-    def changeLane(self, nextLane):
-        print "%s is changing lane" % self.car.id
-        if self.isChangingLanes:
-            print "already changing lane"
-            return
-        if nextLane is None:
-            print "no next lane"
-            return
-        if nextLane == self.lane:
-            print "next lane == current lane"
-            return
-        if self.lane.road != nextLane.road:
-            print "not neighbouring lanes"
-            return
-        nextPosition = self.current.position + self.car.length
-        if nextPosition >= self.current.lane.getLength():
-            print "too late to change lane"
-            return
-        return self.startChangingLanes(nextLane, nextPosition)
+    # def changeLane(self, nextLane):
+    #     print "%s is changing lane" % self.car.id
+    #     if self.isChangingLanes:
+    #         print "already changing lane"
+    #         return
+    #     if nextLane is None:
+    #         print "no next lane"
+    #         return
+    #     if nextLane == self.lane:
+    #         print "next lane == current lane"
+    #         return
+    #     if self.lane.road != nextLane.road:
+    #         print "not neighbouring lanes"
+    #         return
+    #     nextPosition = self.current.position + self.car.length
+    #     if nextPosition >= self.current.lane.getLength():
+    #         print "too late to change lane"
+    #         return
+    #     return self.startChangingLanes(nextLane, nextPosition)
 
     def switchLane(self, targetLane):
         """

@@ -1,14 +1,10 @@
 from __future__ import division
-
-import math
 import sys
+import math
 import time
-
 from TrafficUtil import *
 from Trajectory import Trajectory
 from src.trafficSimulator.config import CAR_LENGTH, CAR_WIDTH
-
-UPDATE_ROUTE_TIME = 120  # second
 
 
 class Car(object):
@@ -68,6 +64,7 @@ class Car(object):
         :param destination: SinkSource object
         """
         self.destination = destination
+        self.getNavigation()
 
     def getCoords(self):
         """
@@ -192,7 +189,8 @@ class Car(object):
         to go straight, turn right, or left.
         :param second: the given time interval in second
         """
-        if self.crashed:  # crashed car cannot move
+        # crashed or deleted car cannot move
+        if self.crashed:
             return
 
         # choose a quicker lane
@@ -351,7 +349,10 @@ class Taxi(Car):
         Set the destination of this trip.
         :param destination: the coordinates of the destination
         """
-        self.destination = destination
+        if self.called:
+            print "%s is updating its navigation..." % self.id
+        super(Taxi, self).setDestination(destination)
+
 
     # def setSource(self, source):
     #     """
@@ -386,6 +387,15 @@ class Taxi(Car):
         self.destRoad = road
         self.destLane = lane
         self.destPosition = position
+        return True
+
+    def calledByDestination(self, destination):
+        if not self.available:
+            return False
+        self.setAvailable(False)
+        self.called = True
+        self.setDestination(destination)
+        return True
 
     def isCalled(self):
         return self.called
