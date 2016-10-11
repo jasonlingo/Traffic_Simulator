@@ -1,10 +1,7 @@
 from __future__ import division
-
 import os
 import sys
-
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
 import math
 import random
 from src.trafficSimulator.config import CLOSE_ALL_CRASH_LANES
@@ -151,13 +148,21 @@ class Environment(QLEnvironment):
     def addCarFromSource(self, poissonLambda):
         self.realMap.addCarFromSource(poissonLambda)
 
+    def fixedCarAccident(self, crashRoad, crashPos):
+        crashedCar = self.realMap.fixedCarAccident(crashRoad, crashPos)
+        if crashedCar:
+            self.crashedCars.add(crashedCar)
+            crashedCar.setCrash(True)
+            return crashedCar
+        return None
+
     def randomCarAccident(self):
         if not self.cars:
             return
         crashedCar = random.choice(self.cars.values())
         self.crashedCars.add(crashedCar)
         crashedCar.setCrash(True)
-        print "Car accident!!! %s crashed" % crashedCar.id
+        return crashedCar
 
     def getCrashedCar(self):
         return self.crashedCars

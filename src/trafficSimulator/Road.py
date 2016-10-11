@@ -1,12 +1,12 @@
 from __future__ import division
-
 import sys
-
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import numpy as np
-
 from Lane import Lane
 from TrafficUtil import Traffic, RoadType, calcVectAngle, haversine
 from src.trafficSimulator.config import MAX_ROAD_LANE_NUM
+from Settings import AVG_TIME_PERIOD
 
 
 class Road(object):
@@ -43,6 +43,9 @@ class Road(object):
         self.sourceSideId = 0
         self.update()
 
+        # data structure for calculate the average speed
+        self.roadSpeed = RoadSpeed(self)
+
     def __eq__(self, other):
         if not other:
             return False
@@ -65,40 +68,51 @@ class Road(object):
         minLnt = min(lnts)
         return maxLat, minLat, maxLnt, minLnt
 
+    def getCars(self):
+        carPosition = []
+        for lane in self.lanes:
+            carPosition.extend(lane.carsPosition.values())
+        cars = [cp.car for cp in carPosition if cp.car is not None]
+        return cars
+
+    def getAvgTrafficTime(self):
+        return self.roadSpeed.getAvgDriveTime(Traffic.globalTime)
+
     def getCurAvgSpeed(self):
         """
         Calculate the average speed from all the cars in this road. If there is no car in this road, then return
         the default speed of this road.
         :return: the average speed (km/h)
         """
-        carPosition = []
-        for lane in self.lanes:
-            carPosition.extend(lane.carsPosition.values())
-        cars = [cp.car for cp in carPosition if cp.car is not None]
+        # carPosition = []
+        # for lane in self.lanes:
+        #     carPosition.extend(lane.carsPosition.values())
+        # cars = [cp.car for cp in carPosition if cp.car is not None]
+        cars = self.getCars()
         avgSpeed = sum([car.speed for car in cars]) / len(cars) if len(cars) > 0 else self.speedLimit
         return avgSpeed
 
     def getSpeedLimit(self):
         return self.speedLimit
 
-    def updateAvgSpeed(self):
-        """
-        Calculate the average speed of the recent speed data (most recent 100 records) of this road.
-        Then store the result to "self.avgSpeed."
-        """
-        print "update avg speed:", self.id, self.avgSpeed, "->",
-        curAvgSpeed = self.getCurAvgSpeed()
-        deleteSpeed = None
-        if self.recentSpeedList >= 100:
-            deleteSpeed = self.recentSpeedList.pop(0)
-        self.recentSpeedList.append(curAvgSpeed)
-
-        if deleteSpeed:
-            self.avgSpeed = (self.avgSpeed * len(self.recentSpeedList) - deleteSpeed + curAvgSpeed) / len(self.recentSpeedList)
-        else:
-            self.avgSpeed = (self.avgSpeed * (len(self.recentSpeedList) - 1) + curAvgSpeed) / len(self.recentSpeedList)
-
-        print self.avgSpeed
+    # def updateAvgSpeed(self):
+    #     """
+    #     Calculate the average speed of the recent speed data (most recent 100 records) of this road.
+    #     Then store the result to "self.avgSpeed."
+    #     """
+    #     print "update avg speed:", self.id, self.avgSpeed, "->",
+    #     curAvgSpeed = self.getCurAvgSpeed()
+    #     deleteSpeed = None
+    #     if self.recentSpeedList >= 100:
+    #         deleteSpeed = self.recentSpeedList.pop(0)
+    #     self.recentSpeedList.append(curAvgSpeed)
+    #
+    #     if deleteSpeed:
+    #         self.avgSpeed = (self.avgSpeed * len(self.recentSpeedList) - deleteSpeed + curAvgSpeed) / len(self.recentSpeedList)
+    #     else:
+    #         self.avgSpeed = (self.avgSpeed * (len(self.recentSpeedList) - 1) + curAvgSpeed) / len(self.recentSpeedList)
+    #
+    #     print self.avgSpeed
 
     def getAvgSpeed(self):
         return max(self.avgSpeed, 0.0)
@@ -274,3 +288,107 @@ class Road(object):
 
         for lane in self.lanes:
             lane.laneIndex()  # find the index for each lane
+
+    def addCarTime(self, carId, curtTime, pos):
+        self.roadSpeed.addCarTime(carId, curtTime, pos)
+
+    def deleteCarTime(self, carId, curtTime):
+        self.roadSpeed.deleteCarTime(carId, curtTime)
+
+    def updateCarTime(self, carId, pos):
+        self.roadSpeed.updateCarTime(carId, pos)
+
+class RoadSpeed(object):
+    """
+    The class used to calculate average speed a road within certain time period.
+    """
+
+    class DriveTime(object):
+
+        def __init__(self, startTime, pos):
+            """
+            :param startTime: (int) the timestamp when the car is entering the road
+            :param pos: (float)
+            """
+            self.startTime = startTime
+            self.endTime = None
+            self.curtPos = pos
+            self.crash = False
+
+        def getTrafficTime(self, curtTime):
+            """
+            :param curtTime:
+            :return:
+            """
+            end = self.endTime if self.endTime else curtTime
+
+            pos = self.curtPos
+            if self.curtPos == 0:
+                if end == self.startTime: # just enter this road, don't count this
+                    # self.curtPos = sys.maxint
+                    return None
+                else:
+                    pos = 0.1  # multiply the time by 10 times
+
+
+            if self.startTime <= end:
+                return (end - self.startTime) / pos
+            else:
+                return (Traffic.globalTimeLimit - (self.startTime - end)) / pos
+
+    def __init__(self, road):
+        self.road = road
+        self.driveTime = []
+        self.cars = {}
+        self.crashedCar = []
+
+    def addCarTime(self, carId, curtTime, pos):
+        driveTime = self.DriveTime(curtTime, pos)
+        self.driveTime.append(driveTime)
+        self.cars[carId] = driveTime
+
+    def deleteCarTime(self, carId, curtTime):
+        """
+        When a car leave this road, record the time.
+        :param carId:
+        :return:
+        """
+        if carId in self.cars:
+            self.cars[carId].endTime = curtTime
+            del self.cars[carId]
+
+    def updateCarTime(self, carId, pos):
+        if carId not in self.cars:
+            print "no %s in this road" % carId
+            return
+        self.cars[carId].pos = pos
+
+    def getAvgDriveTime(self, curtTime):
+        """
+        Calculate the average time for a car to drive pass through this road in recent time.
+        If there is no car, return the speed limit of the road.
+        :param curtTime:
+        :return:
+        """
+        # pop those drive time that end more than AVG_TIME_PERIOD ago
+        while self.driveTime and self.driveTime[0].endTime:
+            if curtTime >= self.driveTime[0].endTime and curtTime - self.driveTime[0].endTime > AVG_TIME_PERIOD:
+                self.driveTime.pop(0)
+            elif curtTime < self.driveTime[0].endTime and sys.maxint - (self.driveTime[0].endTime - curtTime) > AVG_TIME_PERIOD:
+                self.driveTime.pop(0)
+            else:
+                break
+
+        times = [x.getTrafficTime(curtTime) for x in self.driveTime]
+        if times:
+            return sum([x for x in times if x]) / len(times)
+            # return sum( map(lambda x: x.getTrafficTime(curtTime), self.driveTime) ) / len(self.driveTime)
+        else:
+            return (self.road.getLength() / self.road.speedLimit) * 3600
+
+    def setCrash(self, carId):
+        driveTime = self.cars[carId]
+        self.driveTime.remove(driveTime)
+        self.crashedCar.append(driveTime)
+        driveTime.crash = True
+

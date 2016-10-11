@@ -1,5 +1,10 @@
 from Environment import Environment
-from Settings import SHAPEFILE, TAXI_NUM, CAR_NUM, MAP_SIZE, EPSILON, ALPHA, GAMMA
+from Settings import SHAPEFILE
+from Settings import TAXI_NUM
+from Settings import CAR_NUM
+from Settings import MAP_SIZE
+from Settings import CRASH_RELATIVE_POSITION
+from Settings import CRASH_ROAD
 from trafficSimulator.RealMap import RealMap
 from trafficSimulator.AnimatedMap import AnimatedMap
 from TrafficController import TrafficController
@@ -34,7 +39,10 @@ if __name__ == '__main__':
     realMap = RealMap(SHAPEFILE, MAP_SIZE)
     env = Environment(realMap)
     # exp = Experiment(env, TAXI_NUM, CAR_NUM, epsilon=EPSILON, alpha=ALPHA, gamma=GAMMA)
-    trafficCtrl = TrafficController(env, CAR_NUM, TAXI_NUM)
+    carNum = CAR_NUM
+    if CRASH_ROAD:
+        carNum -= 1
+    trafficCtrl = TrafficController(env, carNum, TAXI_NUM, CRASH_ROAD, CRASH_RELATIVE_POSITION)
 
     # For debugging usage. If debugging mode is turned on, then it will not
     if DEBUG:

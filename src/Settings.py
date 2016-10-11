@@ -1,3 +1,4 @@
+import sys
 
 # ===============================================
 # Traffic simulator settings
@@ -20,6 +21,19 @@ CALL_NEW_TAXI_TIME_GAP = 2
 
 # The filename of the shapefile for the traffic simulator
 SHAPEFILE = "/Users/Jason/GitHub/Research/QLearning/Data/Roads_All.dbf"
+
+# The speed limit of roads where a crash happens
+SPEED_LIMIT_ON_CRASH = 10
+
+# time period (in second) for calculate average drive time of a road
+AVG_TIME_PERIOD = 300
+
+# fixed crash car location ========
+CRASH_ROAD = "Road_150"
+"""Road for the crash"""
+
+CRASH_RELATIVE_POSITION = 0.5
+"""Relative position of the road (0.2 - 0.8, leave some space for the car's body)"""
 
 
 # ===============================================

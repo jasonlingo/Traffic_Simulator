@@ -427,8 +427,8 @@ class RealMap(object):
                         addedCar += 1
                         destination = sampleOne(self.sink)
                         newCar = Car(lane, 0)
-                        newCar.setDestination(destination)
                         newCar.navigator = self.navigator
+                        newCar.setDestination(destination)
                         self.cars[newCar.id] = newCar
                         print "Add a new car: %s. [%d cars, %d taxis]" % (newCar.id, len(self.cars), len(self.taxis))
                         if addedCar == numCar:
@@ -447,15 +447,36 @@ class RealMap(object):
                         addedCar += 1
                         destination = sampleOne(self.sink)
                         newCar = Car(lane, pos)
-                        newCar.setDestination(destination)
                         newCar.navigator = self.navigator
+                        newCar.setDestination(destination)
                         self.cars[newCar.id] = newCar
                         newCar.destination = sampleOne(self.sink)
                         print "Add a new car: %s. [%d cars, %d taxis]" % (newCar.id, len(self.cars), len(self.taxis))
                         if addedCar == numCar:
                             break
 
-    def getRandomDestinatino(self):
+    def fixedCarAccident(self, crashRoad, crashPos):
+        """
+        Add a crashed car on the given position.
+        :param crashRoad: (str) road for a crash
+        :param crashPos: (float) relative position for the crash on the road
+        :return:
+        """
+        if crashRoad not in self.roads:
+            print "%s doesn't exist!!"
+            exit(0)
+        road = self.roads[crashRoad]
+        lane = road.getLanes()[0]
+        car = Car(lane, crashPos * road.getLength())
+        if self.checkOverlap(lane, crashPos, car.length):
+            car.destination = sampleOne(self.sink)
+            car.navigator = self.navigator
+            self.cars[car.id] = car
+            return car
+        else:
+            return None
+
+    def getRandomDestination(self):
         return sampleOne(self.sink)
 
     def checkOverlap(self, lane, position, carLength):

@@ -9,10 +9,11 @@ from DrawUtil import setRectangle
 from DrawUtil import GPS_DIST_UNIT
 from GoogleMap import getBackgroundMap
 
+# multiple for the car's size
+CAR_LEN_MULTI = 16000
 
-CAR_LEN_MULTI = 18000
-
-colors = {"myYellow": (1, 1, 0.3)}
+colors = {"myYellow": (1, 1, 0.3),
+          "calledTaxi": (1, 0, 1)}
 
 # def convertGeoUnit(lat, lng, latBase, lngBase, gpsW, gpsH, imageH, imageW):
 #     """
@@ -219,7 +220,7 @@ class AnimatedMap(threading.Thread):
                         coords = car.getCoords()
                         lngs.append(self.lngToPixel(coords[0]))
                         lats.append(self.latToPixel(coords[1]))
-                    self.goalPoint, = ax.plot(lngs, lats, 'y*', ms=8)
+                    self.goalPoint, = ax.plot(lngs, lats, 'y*', ms=10)
 
             # plot cars
             for car in self.cars.values() + self.taxis.values():
@@ -246,7 +247,10 @@ class AnimatedMap(threading.Thread):
 
 
                 if car.isTaxi:
-                    patch.set_color(colors["myYellow"])
+                    if car.called:
+                        patch.set_color(colors["calledTaxi"])
+                    else:
+                        patch.set_color(colors["myYellow"])
                 else:
                     if car.isOnRightLane():
                         patch.set_color("r")

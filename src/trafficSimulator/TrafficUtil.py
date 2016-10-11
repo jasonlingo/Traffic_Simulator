@@ -1,3 +1,4 @@
+import sys
 import random
 from collections import defaultdict
 from math import radians, cos, sin, asin, sqrt, atan2, pi
@@ -7,6 +8,11 @@ from src.trafficSimulator.config import *
 
 
 class Traffic(object):
+
+    # time for the entire simulator
+    globalTime = 0.0
+    globalTimeLimit = sys.float_info.max
+
     uniqueid = defaultdict(int)
 
     @classmethod
@@ -14,16 +20,23 @@ class Traffic(object):
         cls.uniqueid[idType] += 1
         return idType + "_" + str(cls.uniqueid[idType])
 
-
 class RoadType(object):
     ROAD = "Road"
     INTERSECTION = "Intersection"
-
 
 class CarType(object):
     CAR = "car"
     TAXI = "taxi"
 
+class DistanceUnit(object):
+    KM = "KM"
+    MILE = "MILE"
+
+    # The radius of the earth in kilometers
+    EARTH_RADIUS_KM = 6371.0
+
+    # The radius of the earth in miles
+    EARTH_RADIUS_MILE = 3959.0
 
 def sampleOne(list):
     """
@@ -57,10 +70,10 @@ def haversine(point1, point2):
     c = 2 * asin(sqrt(a))
 
     # The radius of earth in kilometers or miles.
-    if METER_TYPE == "K":
-        r = EARTH_RADIUS_KM    # The radius of earth in kilometers.
+    if METER_TYPE == DistanceUnit.KM:
+        r = DistanceUnit.EARTH_RADIUS_KM    # The radius of earth in kilometers.
     else:
-        r = EARTH_RADIUS_MILE  # The radius of earth in miles.
+        r = DistanceUnit.EARTH_RADIUS_MILE  # The radius of earth in miles.
     return c * r
 
 
