@@ -8,12 +8,15 @@ import sys
 from DrawUtil import setRectangle
 from DrawUtil import GPS_DIST_UNIT
 from GoogleMap import getBackgroundMap
+from config import MAP_TYPE
 
 # multiple for the car's size
 CAR_LEN_MULTI = 16000
 
+# (r, g, b)
 colors = {"myYellow": (1, 1, 0.3),
-          "calledTaxi": (1, 0, 1)}
+          "calledTaxi": (1, 0, 1),
+          "majorRoad": (0/255, 1, 115/255)}
 
 # def convertGeoUnit(lat, lng, latBase, lngBase, gpsW, gpsH, imageH, imageW):
 #     """
@@ -102,12 +105,18 @@ class AnimatedMap(threading.Thread):
             # collect gps points of roads
             allLngs = []
             allLats = []
+            majorRoadLngs = []
+            majorRoadLats = []
             for rd in self.roads.values():
                 source = rd.getSource()
                 target = rd.getTarget()
                 if source and target:
-                    allLngs.append([source.center.lng, target.center.lng])
-                    allLats.append([source.center.lat, target.center.lat])
+                    if rd.isMajorRoad:
+                        majorRoadLngs.append([source.center.lng, target.center.lng])
+                        majorRoadLats.append([source.center.lat, target.center.lat])
+                    else:
+                        allLngs.append([source.center.lng, target.center.lng])
+                        allLats.append([source.center.lat, target.center.lat])
                     self.maxLat = max(self.maxLat, source.center.lat, target.center.lat)
                     self.minLat = min(self.minLat, source.center.lat, target.center.lat)
                     self.maxLng = max(self.maxLng, source.center.lng, target.center.lng)
@@ -119,7 +128,7 @@ class AnimatedMap(threading.Thread):
 
             # get Google static map and show it as a background image
             mapCenter = ((self.maxLat + self.minLat) / 2.0, (self.maxLng + self.minLng) / 2.0)
-            baseMapName = getBackgroundMap(mapCenter, abs(self.maxLat - self.minLat), abs(self.maxLng - self.minLng))
+            baseMapName = getBackgroundMap(mapCenter, abs(self.maxLat - self.minLat), abs(self.maxLng - self.minLng), MAP_TYPE)
             resizedMapName = "./pic/map/resized_map.png"  # TODO: change to parameter
 
             # adjust the static map size
@@ -148,10 +157,14 @@ class AnimatedMap(threading.Thread):
             # convert coordination system
             allLngs = map(lambda x: [self.lngToPixel(x[0]), self.lngToPixel(x[1])], allLngs)
             allLats = map(lambda x: [self.latToPixel(x[0]), self.latToPixel(x[1])], allLats)
+            majorRoadLngs = map(lambda x: [self.lngToPixel(x[0]), self.lngToPixel(x[1])], majorRoadLngs)
+            majorRoadLats = map(lambda x: [self.latToPixel(x[0]), self.latToPixel(x[1])], majorRoadLats)
 
             # plot roads
             for i in range(len(allLngs)):
                 plt.plot(allLngs[i], allLats[i], color='w', alpha=0.7)
+            for i in range(len(majorRoadLngs)):
+                plt.plot(majorRoadLngs[i], majorRoadLats[i], color=colors["majorRoad"], alpha=0.7)
 
             # create rectangle patches for cars and taxis
             for car in self.cars.values() + self.taxis.values():

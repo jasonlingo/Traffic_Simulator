@@ -5,6 +5,7 @@ from Settings import CAR_NUM
 from Settings import MAP_SIZE
 from Settings import CRASH_RELATIVE_POSITION
 from Settings import CRASH_ROAD
+from Settings import MAJOR_ROAD_INIT_CAR_NUM_RATIO
 from trafficSimulator.RealMap import RealMap
 from trafficSimulator.AnimatedMap import AnimatedMap
 from TrafficController import TrafficController
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     carNum = CAR_NUM
     if CRASH_ROAD:
         carNum -= 1
-    trafficCtrl = TrafficController(env, carNum, TAXI_NUM, CRASH_ROAD, CRASH_RELATIVE_POSITION)
+    trafficCtrl = TrafficController(env, carNum, TAXI_NUM, MAJOR_ROAD_INIT_CAR_NUM_RATIO, CRASH_ROAD, CRASH_RELATIVE_POSITION)
 
     # For debugging usage. If debugging mode is turned on, then it will not
     if DEBUG:

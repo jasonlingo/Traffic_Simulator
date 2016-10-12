@@ -129,24 +129,27 @@ class Environment(QLEnvironment):
             return True
         return False
 
-    def addRandomCars(self, num):
+    def addRandomCars(self, num, onMajorRoad=False):
         """
         Add random cars to the map.
         :param num: number of cars to be added.
         """
-        self.realMap.addRandomCars(num, CarType.CAR)
+        self.realMap.addRandomCars(num, CarType.CAR, onMajorRoad)
         self.cars = self.realMap.getCars()
 
-    def addRandomTaxis(self, num):
+    def addRandomTaxis(self, num, onMajorRoad=False):
         """
         Add random taxis to the map.
         :param num: number of taxis to be added.
         """
-        self.realMap.addRandomCars(num, CarType.TAXI)
+        self.realMap.addRandomCars(num, CarType.TAXI, onMajorRoad)
         self.taxis = self.realMap.getTaxis()
 
     def addCarFromSource(self, poissonLambda):
         self.realMap.addCarFromSource(poissonLambda)
+
+    def addCarFromMajorRoad(self, poissonLambda):
+        self.realMap.addCarFromMajorRoad(poissonLambda)
 
     def fixedCarAccident(self, crashRoad, crashPos):
         crashedCar = self.realMap.fixedCarAccident(crashRoad, crashPos)

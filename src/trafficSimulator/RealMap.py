@@ -14,7 +14,7 @@ import random
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from Navigation import Navigator
-
+from config import MAJOR_ROAD_MIN_LEN
 
 # probabilities for edge intersections to be a sink or source places
 SINK_PROB = 0.15
@@ -24,7 +24,6 @@ SINK_SOURCE_PROB = 0.2
 # minimal road length (km) for a sink or source point
 MIN_SINK_SOURCE_ROAD_LENGTH = 0.2
 ROAD_OFFSET_FOR_SINK_SOURCE_POINT = 0.1
-
 
 
 class RealMap(object):
@@ -49,8 +48,16 @@ class RealMap(object):
         # self.sinkSource = set()           # the places that can be both sink and source places for adding and deleting cars
         self.sink = set()                 # the places that can only be sink places for deleting cars
         self.source = set()               # the places that can only be source places for adding cars
+        self.majorRoadSinkSource = set()  # the sink places on major roads
 
         self.createMap()                  # create the map by connecting the intersection and roads
+        self.majorRoads = []
+        self.nonMajorRoads = []
+        for road in self.roads.values():
+            if road.isMajorRoad:
+                self.majorRoads.append(road)
+            else:
+                self.nonMajorRoads.append(road)
 
         self.board = self.she.getBoard()  # [top, bot, right, left] of the borders of this map
 
@@ -285,6 +292,7 @@ class RealMap(object):
             # self.sinkSource = set()
             self.assignSinkSourceOnIntersection()
             self.assignSinkSourceOnRoad()
+            self.assignSinkSourceOnMajorRoad()
         print "%d sinks" % len(self.sink)
         print "%d sources" % len(self.source)
 
@@ -343,20 +351,39 @@ class RealMap(object):
                     visited.add(nextInter.id)
                     queue.append(nextInter)
 
-    def randomLaneLocation(self):
+    def assignSinkSourceOnMajorRoad(self):
+        for road in self.roads.values():
+            connectedInRoad = map(lambda x: x.isMajorRoad, road.getSource().getInRoads())
+            connectedOutRoad = map(lambda x: x.isMajorRoad, road.getTarget().getOutRoads())
+            if road.isMajorRoad or (True in connectedInRoad and True in connectedOutRoad):
+                road.isMajorRoad = True
+                sinkSourceNum = int(road.getLength() / MAJOR_ROAD_MIN_LEN)
+                addedSinkSourceNum = 0
+                while addedSinkSourceNum <= sinkSourceNum:
+                    point = SinkSource(None, road, addedSinkSourceNum * MAJOR_ROAD_MIN_LEN)
+                    self.majorRoadSinkSource.add(point)
+                    addedSinkSourceNum += 1
+
+    def randomLaneLocation(self, onMajorRoad=False):
         """
         Randomly select one land from a randomly selected road and position (the distance from
         the source point to the picked position.
+
+        :param onMajorRoad: (boolean) indicate whether the cars are generated on major roads
         :return: the selected lane and position.
         """
-        rd = None
-        while rd is None:
-            tmp = random.choice(self.roads.values())
-            if tmp.getSource() and tmp.getTarget():
-                rd = tmp
-        lane = random.choice(rd.getLanes())
-        position = random.random() * lane.getLength()  # TODO: check no car at that position
+        if onMajorRoad:
+            roads = self.majorRoads
+        else:
+            roads = self.nonMajorRoads
 
+        road = None
+        while road is None:
+            tmp = random.choice(roads)
+            if tmp.getSource() and tmp.getTarget():
+                road = tmp
+        lane = random.choice(road.getLanes())
+        position = random.random() * lane.getLength()  # TODO: check no car at that position
         return lane, position
 
     def cleanTaxis(self):
@@ -372,7 +399,7 @@ class RealMap(object):
     def clearRoadAvgSpeed(self):
         self.roadAvgSpeed.clear()
 
-    def addRandomCars(self, num, carType):
+    def addRandomCars(self, num, carType, onMajorRoad):
         """
         Add num cars into the self.cars dictionary by their id. If an id
         already exists in the dictionary, then update the dictionary with
@@ -381,6 +408,7 @@ class RealMap(object):
 
         :param num: the total number of cars to be added into the dictionary
         :param carType: the type of car (taxi or car) to be added
+        :param onMajorRoad: indicate the cars are added on major roads
         """
         print "realmap add " + carType
         if carType == CarType.CAR:
@@ -393,22 +421,29 @@ class RealMap(object):
             sys.stderr.write("RealMap: car type error: %s" % carType)
             sys.exit(1)
 
-        while len(carList) < num:
-            lane, position = self.randomLaneLocation()
+        while num:
+            lane, position = self.randomLaneLocation(onMajorRoad)
             car = carType(lane, position)
             if self.checkOverlap(lane, position, car.length):
                 car.destination = sampleOne(self.sink)
                 car.navigator = self.navigator
                 carList[car.id] = car
+                num -= 1
 
-    def addCarFromSource(self, pos_lambda):
+    def addCarFromSource(self, posLambda):
+        self.addCarFromGivenSource(self.source, posLambda)
+
+    def addCarFromMajorRoad(self, posLambda):
+        self.addCarFromGivenSource(self.majorRoadSinkSource, posLambda)
+
+    def addCarFromGivenSource(self, sources, posLambda):
         """
         For each sink-source intersection, get a number of new cars according to
         the poisson arrival process. Choose one lane from the out road of the
         intersection and add a car if there is not car at the position.
         """
-        for s in self.source:
-            numCar = numpy.random.poisson(pos_lambda)  # number of cars to be added at this source point
+        for s in sources:
+            numCar = numpy.random.poisson(posLambda)  # number of cars to be added at this source point
             if numCar == 0:
                 continue
             addedCar = 0
@@ -430,7 +465,8 @@ class RealMap(object):
                         newCar.navigator = self.navigator
                         newCar.setDestination(destination)
                         self.cars[newCar.id] = newCar
-                        print "Add a new car: %s. [%d cars, %d taxis]" % (newCar.id, len(self.cars), len(self.taxis))
+                        print "Add a new car: %s. [%d cars, %d taxis]" %\
+                            (newCar.id, len(self.cars), len(self.taxis))
                         if addedCar == numCar:
                             break
             else:
@@ -451,7 +487,8 @@ class RealMap(object):
                         newCar.setDestination(destination)
                         self.cars[newCar.id] = newCar
                         newCar.destination = sampleOne(self.sink)
-                        print "Add a new car: %s. [%d cars, %d taxis]" % (newCar.id, len(self.cars), len(self.taxis))
+                        print "Add a new car: %s. [%d cars, %d taxis]" %\
+                              (newCar.id, len(self.cars), len(self.taxis))
                         if addedCar == numCar:
                             break
 

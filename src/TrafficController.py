@@ -7,6 +7,7 @@ from src.trafficSimulator.config import POI_LAMBDA
 from trafficSimulator.SinkSource import SinkSource
 from trafficSimulator.TrafficUtil import Traffic
 from trafficSimulator.TrafficUtil import DistanceUnit
+from src.trafficSimulator.config import MAJOR_ROAD_POI_LAMBDA
 
 
 class TrafficController(object):
@@ -15,19 +16,27 @@ class TrafficController(object):
     make a random car accident. It also generate car flow into the map.
     """
 
-    def __init__(self, env, carNum, taxiNum, crashRoad, crashPos):
+    def __init__(self, env, carNum, taxiNum, majorRoadCarInitRatio, crashRoad, crashPos):
         """
         :param env: environment object.
         :param carNum: number of cars in the beginning
         :param taxiNum: number of taxis in the beginning
+        :param majorRoadCarInitRatio: (float) the percentage of the carNum to be generated on the major roads
         :param crashRoad: (str) the road's name for a fixed crash
         :param crashPos: (float) the relative position (0-1) of the crashRoad
         """
         self.env = env
         self.crashRoad = crashRoad
         self.crashPos = crashPos
-        self.env.addRandomCars(carNum)
-        self.env.addRandomTaxis(taxiNum)
+
+        # create random cars and taxis
+        majorRoadCarsNum = int((carNum + 1) * majorRoadCarInitRatio)
+        self.env.addRandomCars(carNum - majorRoadCarsNum, False)
+        self.env.addRandomCars(majorRoadCarsNum, True)
+        majorRoadTaxisNum = int((taxiNum + 1) * majorRoadCarInitRatio)
+        self.env.addRandomTaxis(taxiNum - majorRoadTaxisNum, False)
+        self.env.addRandomTaxis(majorRoadTaxisNum, True)
+
         self.cars = self.env.getCars()
         self.taxis = self.env.getTaxis()
         self.crashedCars = []
@@ -95,6 +104,7 @@ class TrafficController(object):
 
             # add new car and taxi
             self.env.addCarFromSource(POI_LAMBDA)
+            self.env.addCarFromMajorRoad(MAJOR_ROAD_POI_LAMBDA)
 
             # delete cars that is reach a sink intersection
             deletedCars = []

@@ -3,32 +3,34 @@ import sys
 # ===============================================
 # Traffic simulator settings
 # ===============================================
-# The total number of learning trials
 EXP_NUM = 30000
+"""The total number of learning trials"""
 
-# The initial number of taxis in the system
 TAXI_NUM = 20
+"""The initial number of taxis in the system"""
 
-# The initial number of cars in the system
 CAR_NUM = 50
+"""The initial number of cars in the system"""
 
-# Map size, the number of shape file record to be read
 MAP_SIZE = 8000
+"""Map size, the number of shape file record to be read"""
 
-# The threshold of time (minute) for the system to call a new taxi that
-# might arrive the goal location with shorter time.
 CALL_NEW_TAXI_TIME_GAP = 2
+"""
+The threshold of time (minute) for the system to call a new taxi that
+might arrive the goal location with shorter time.
+"""
 
-# The filename of the shapefile for the traffic simulator
 SHAPEFILE = "/Users/Jason/GitHub/Research/QLearning/Data/Roads_All.dbf"
+"""The filename of the shapefile for the traffic simulator"""
 
-# The speed limit of roads where a crash happens
 SPEED_LIMIT_ON_CRASH = 10
+"""The speed limit of roads where  a crash happens"""
 
-# time period (in second) for calculate average drive time of a road
-AVG_TIME_PERIOD = 300
+MAJOR_ROAD_INIT_CAR_NUM_RATIO = 0.7
+"""The percentage that the number of cars on the major roads initially"""
 
-# fixed crash car location ========
+# = fixed crash car location ====================
 CRASH_ROAD = "Road_150"
 """Road for the crash"""
 
