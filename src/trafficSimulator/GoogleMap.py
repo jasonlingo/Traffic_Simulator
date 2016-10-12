@@ -8,7 +8,7 @@ from src.trafficSimulator.config import GOOGLE_STATIC_MAP_KEY
 from src.trafficSimulator.config import MAP_FOLDER, BG_MAP_NAME
 
 
-def getBackgroundMap(center, height, width):
+def getBackgroundMap(center, height, width, mapType):
     """
     Download the static map centered at the given position (lat, lng) from Google Map API.
     Save the downloaded map and return its file address.
@@ -20,7 +20,7 @@ def getBackgroundMap(center, height, width):
         os.makedirs(mapFolder)
 
     filename = mapFolder + "/" + BG_MAP_NAME
-    parameters = genGoogleMapAPIParameter(center[0], center[1], height / width)
+    parameters = genGoogleMapAPIParameter(center[0], center[1], height / width, mapType)
     getGoogleStaticMap(parameters, filename)
     return filename
 
@@ -78,7 +78,7 @@ def genGooglemap(top, bot, left, right):
         mergedImage.paste(img, coords[i])
     mergedImage.save("map.png")
 
-def genGoogleMapAPIParameter(lat, lng, hwRatio):
+def genGoogleMapAPIParameter(lat, lng, hwRatio, mapType):
     parameters = {}
 
     # API key
@@ -98,8 +98,7 @@ def genGoogleMapAPIParameter(lat, lng, hwRatio):
     # scale
     parameters["scale"] = "2"
 
-    # map type: roadmap / satellite / terrain / hybrid
-    parameters["maptype"] = "satellite"
+    parameters["maptype"] = mapType
 
     return parameters
 

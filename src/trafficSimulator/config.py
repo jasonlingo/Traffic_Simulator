@@ -18,6 +18,9 @@ BG_MAP_NAME = "bg_map.jpg"
 RESIZED_MAP_NAME = "resized_map.png"
 """The resized background map's file name"""
 
+MAP_TYPE = "satellite"
+"""map type: roadmap / satellite / terrain / hybrid"""
+
 # ============================================================================
 # map settings
 # # ============================================================================
@@ -59,16 +62,18 @@ CAR_LENGTH = 0.0045
 CAR_WIDTH = 0.0018
 """The width (in km) of a car"""
 
-POI_LAMBDA = 0.00005
+POI_LAMBDA = 0.00002
 """The lambda parameter for poisson arrival for a new car comes into the map"""
 
 UPDATE_ROUTE_TIME = sys.maxint  # second
 """The time for updating navigation"""
 
-MAJOR_ROAD_MIN_LEN = 0.1
-"""The minimum length for a major roads. If a road is longer than this length, it is a major road."""
+MAJOR_ROAD_MIN_LEN = 0.2
+"""The minimum length (in km) for a major roads. If a road is longer than this length, it is a major road."""
 
 MAJOR_ROAD_POI_LAMBDA = POI_LAMBDA * 3
 """The lambda parameter for poisson arrival for a new car comes into the map"""
 
+AVG_TIME_PERIOD = 300
+"""Time period (in second) for calculating average drive time of a road"""
 

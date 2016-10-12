@@ -6,7 +6,8 @@ import numpy as np
 from Lane import Lane
 from TrafficUtil import Traffic, RoadType, calcVectAngle, haversine
 from src.trafficSimulator.config import MAX_ROAD_LANE_NUM
-from Settings import AVG_TIME_PERIOD
+from config import MAJOR_ROAD_MIN_LEN
+from config import AVG_TIME_PERIOD
 
 
 class Road(object):
@@ -41,6 +42,7 @@ class Road(object):
         self.sourceSide = None
         self.targetSideId = 0
         self.sourceSideId = 0
+        self.isMajorRoad = self.length >= MAJOR_ROAD_MIN_LEN
         self.update()
 
         # data structure for calculate the average speed
