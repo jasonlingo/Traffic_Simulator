@@ -9,7 +9,7 @@ EXP_NUM = 30000
 TAXI_NUM = 20
 """The initial number of taxis in the system"""
 
-CAR_NUM = 50
+CAR_NUM = 500
 """The initial number of cars in the system"""
 
 MAP_SIZE = 8000
@@ -27,7 +27,7 @@ SHAPEFILE = "/Users/Jason/GitHub/Research/QLearning/Data/Roads_All.dbf"
 SPEED_LIMIT_ON_CRASH = 10
 """The speed limit of roads where  a crash happens"""
 
-MAJOR_ROAD_INIT_CAR_NUM_RATIO = 0.7
+MAJOR_ROAD_INIT_CAR_NUM_RATIO = 0.8
 """The percentage that the number of cars on the major roads initially"""
 
 # = fixed crash car location ====================

@@ -300,6 +300,7 @@ class Road(object):
     def updateCarTime(self, carId, pos):
         self.roadSpeed.updateCarTime(carId, pos)
 
+
 class RoadSpeed(object):
     """
     The class used to calculate average speed a road within certain time period.
@@ -310,10 +311,11 @@ class RoadSpeed(object):
         def __init__(self, startTime, pos):
             """
             :param startTime: (int) the timestamp when the car is entering the road
-            :param pos: (float)
+            :param pos: (float) relative position (0~1)
             """
             self.startTime = startTime
             self.endTime = None
+            self.startingPos = pos
             self.curtPos = pos
             self.crash = False
 
@@ -323,30 +325,34 @@ class RoadSpeed(object):
             :return:
             """
             end = self.endTime if self.endTime else curtTime
-
-            pos = self.curtPos
-            if self.curtPos == 0:
-                if end == self.startTime: # just enter this road, don't count this
-                    # self.curtPos = sys.maxint
+            pos = self.curtPos - self.startingPos
+            if pos == 0:
+                if end == self.startTime:  # just enter this road, don't count this
                     return None
                 else:
                     pos = 0.1  # multiply the time by 10 times
 
-
             if self.startTime <= end:
-                return (end - self.startTime) / pos
+                return ((end - self.startTime) / pos) * (1 - self.startingPos)
             else:
-                return (Traffic.globalTimeLimit - (self.startTime - end)) / pos
+                return ((Traffic.globalTimeLimit - (self.startTime - end)) / pos) * (1 - self.startingPos)
+
 
     def __init__(self, road):
         self.road = road
-        self.driveTime = []
+        self.driveTimes = []
         self.cars = {}
         self.crashedCar = []
 
     def addCarTime(self, carId, curtTime, pos):
+        """
+        Add a record to track the time of a car drives on this road.
+        :param carId:
+        :param curtTime:
+        :param pos: (float) relative position
+        """
         driveTime = self.DriveTime(curtTime, pos)
-        self.driveTime.append(driveTime)
+        self.driveTimes.append(driveTime)
         self.cars[carId] = driveTime
 
     def deleteCarTime(self, carId, curtTime):
@@ -373,15 +379,21 @@ class RoadSpeed(object):
         :return:
         """
         # pop those drive time that end more than AVG_TIME_PERIOD ago
-        while self.driveTime and self.driveTime[0].endTime:
-            if curtTime >= self.driveTime[0].endTime and curtTime - self.driveTime[0].endTime > AVG_TIME_PERIOD:
-                self.driveTime.pop(0)
-            elif curtTime < self.driveTime[0].endTime and sys.maxint - (self.driveTime[0].endTime - curtTime) > AVG_TIME_PERIOD:
-                self.driveTime.pop(0)
-            else:
-                break
+        # since the time will re-start from 0 when it reach the limit, check the current time is >= or < the drive time
+        expiredDriveTime = []
+        for driveTime in self.driveTimes:
+            if not driveTime.endTime:
+                continue
+            if curtTime >= driveTime.endTime and curtTime - driveTime.endTime > AVG_TIME_PERIOD:
+                expiredDriveTime.append(driveTime)
+            elif curtTime < driveTime.endTime and sys.maxint - (driveTime.endTime - curtTime) > AVG_TIME_PERIOD:
+                expiredDriveTime.append(driveTime)
 
-        times = [x.getTrafficTime(curtTime) for x in self.driveTime]
+        # delete expired DriveTime
+        for driveTime in expiredDriveTime:
+            self.driveTimes.remove(driveTime)
+
+        times = [x.getTrafficTime(curtTime) for x in self.driveTimes]
         if times:
             return sum([x for x in times if x]) / len(times)
             # return sum( map(lambda x: x.getTrafficTime(curtTime), self.driveTime) ) / len(self.driveTime)
@@ -390,7 +402,7 @@ class RoadSpeed(object):
 
     def setCrash(self, carId):
         driveTime = self.cars[carId]
-        self.driveTime.remove(driveTime)
+        self.driveTimes.remove(driveTime)
         self.crashedCar.append(driveTime)
         driveTime.crash = True
 
