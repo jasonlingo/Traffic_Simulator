@@ -45,6 +45,8 @@ class RealMap(object):
         self.roads = {}
         self.intersections = {}
 
+        self.navigator = Navigator(self)  # navigator for cars
+
         # self.sinkSource = set()           # the places that can be both sink and source places for adding and deleting cars
         self.sink = set()                 # the places that can only be sink places for deleting cars
         self.source = set()               # the places that can only be source places for adding cars
@@ -71,7 +73,7 @@ class RealMap(object):
         self.aniMapPlotOK = False         # indicate the map has been plotted
         # self.carRunsOk = False            # TODO: may not need this
         self.roadAvgSpeed = {}            # the cache for the average speed of each road
-        self.navigator = Navigator(self)  # navigator for cars
+
 
     # ========================================================================
     # Get and set methods
@@ -353,6 +355,7 @@ class RealMap(object):
 
     def assignSinkSourceOnMajorRoad(self):
         for road in self.roads.values():
+            # if a road connects two major roads, then mark it as a major road
             connectedInRoad = map(lambda x: x.isMajorRoad, road.getSource().getInRoads())
             connectedOutRoad = map(lambda x: x.isMajorRoad, road.getTarget().getOutRoads())
             if road.isMajorRoad or (True in connectedInRoad and True in connectedOutRoad):

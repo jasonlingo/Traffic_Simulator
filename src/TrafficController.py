@@ -56,7 +56,7 @@ class TrafficController(object):
 
         # used to delay the happen of a car accident
         timeToAccident = 0
-        TIME_FOR_ACCIDENT = 10
+        TIME_FOR_ACCIDENT = 60
 
         # preTime = time.time()
         deltaTime = 0.3
@@ -86,10 +86,10 @@ class TrafficController(object):
                     # set the speed limit of the road where this crash happens
                     crashRoad = crashedCar.trajectory.getRoad()
                     crashRoad.speedLimit = SPEED_LIMIT_ON_CRASH
-                    print ("Car accident!!! %s crashed on %s" % (crashedCar.id, crashRoad.id))
-                    print ("Set the speed limit of %s to %d %s" % (crashRoad.id,
+                    print "%s crashed on %s at time %d" % (crashedCar.id, crashRoad.id, Traffic.globalTime)
+                    print "Set the speed limit of %s to %d %s" % (crashRoad.id,
                                                                   crashRoad.speedLimit,
-                                                                  "km/h" if METER_TYPE == DistanceUnit.KM else "mph"))
+                                                                  "km/h" if METER_TYPE == DistanceUnit.KM else "mph")
 
                     # call a taxi to the crash location
                     crashLoc = SinkSource(None, crashRoad, crashedCar.trajectory.current.position)
@@ -101,6 +101,9 @@ class TrafficController(object):
                         if nearestTaxi and self.callTaxi(nearestTaxi, crashLoc):
                             self.calledTaxi.append(nearestTaxi)
                             hasCalledTaxi = True
+                    for taxi in self.taxis.values():
+                        if taxi not in self.calledTaxi:
+                            taxi.setDestination(crashLoc)
 
             # add new car and taxi
             self.env.addCarFromSource(POI_LAMBDA)
@@ -112,7 +115,7 @@ class TrafficController(object):
                 if car.delete:
                     car.release()
                     deletedCars.append(car.id)
-                    print ("%s went to the sink point. [%d cars, %d taxis]" % (car.id,
+                    print ("%s went to its destination. [%d cars, %d taxis]" % (car.id,
                                                                                len(self.cars) - len(deletedCars),
                                                                                len(self.taxis)))
             for carId in deletedCars:
@@ -123,20 +126,26 @@ class TrafficController(object):
                 car.move(deltaTime)
 
             # assign a new destination to taxis that arrive their old destinations.
+            deleteTaxi = []
             for taxi in self.taxis.values():
                 if taxi.delete:
+                    taxi.release()
+                    deleteTaxi.append(taxi)
                     if taxi.called:
-                        print "\n\n%s arrived the crash location!!\n\n" % taxi.id
-                        # end = raw_input("end this simulator")
-                        # if end.lower() == "y":
-                        exit(0)
-                        taxi.alive = False
-                    else:
-                        print "%s arrived its destination. Assign a new destination to it." % taxi.id
-                        newDestination = self.env.realMap.getRandomDestination()
-                        taxi.destination = newDestination
-                        taxi.delete = False
-                        taxi.alive = True  #FIXME: False
+                        print "==========================================\n"
+                    print "\n%s arrived the crash location at time %d\n" % (taxi.id, Traffic.globalTime)
+                    # if taxi.called:
+                    #     print "\n\n%s arrived the crash location!!\n\n" % taxi.id
+                    #     taxi.alive = False
+                    # else:
+                    #     print "%s arrived its destination. Assign a new destination to it." % taxi.id
+                    #     newDestination = self.env.realMap.getRandomDestination()
+                    #     taxi.destination = newDestination
+                    #     taxi.delete = False
+                    #     taxi.alive = True  #FIXME: False
+
+            for taxi in deleteTaxi:
+                del self.taxis[taxi.id]
 
             # make each taxi move
             for taxi in self.taxis.values():
