@@ -1,8 +1,7 @@
-import sys
-import random
 from collections import defaultdict
 from math import radians, cos, sin, asin, sqrt, atan2, pi
 
+from FixedRandom import FixedRandom
 from Coordinate import Coordinate
 from src.trafficSimulator.config import *
 
@@ -44,7 +43,7 @@ def sampleOne(list):
     :param list:
     :return: a randomly picked item
     """
-    return random.sample(list, 1)[0]
+    return FixedRandom.sample(list, 1)[0]
 
 
 def haversine(point1, point2):

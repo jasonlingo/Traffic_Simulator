@@ -1,4 +1,4 @@
-import random
+from FixedRandom import FixedRandom
 
 
 class Taxi:
@@ -28,7 +28,7 @@ class Taxi:
         Args:
             changeProb: the probability of change availability status
         """
-        if random.random() >= changeProb:
+        if FixedRandom.random() >= changeProb:
             self.available = not self.available
 
     def getPosition(self):
@@ -68,5 +68,5 @@ class Taxi:
     def goRandomly(self, env):
         actions = env.getAction(self.getPosition())
         if actions is not None:
-            action = random.choice(actions)
+            action = FixedRandom.choice(actions)
             self.setPosition(env.nextPos(self, action))

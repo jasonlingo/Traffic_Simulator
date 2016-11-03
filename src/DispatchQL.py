@@ -1,5 +1,5 @@
 from QLearning import QLearning
-import random
+from FixedRandom import FixedRandom
 from Settings import CHECK_INTERVAL
 
 class DispatchQL(QLearning):
@@ -143,9 +143,9 @@ class DispatchQL(QLearning):
         if not self.exp.allTaxis:
             return
 
-        if random.random() < self.epsilon:  # TODO: make epsilon decrease gradually
+        if FixedRandom.random() < self.epsilon:  # TODO: make epsilon decrease gradually
             # exploration
-            taxi = random.choice(self.exp.allTaxis)
+            taxi = FixedRandom.choice(self.exp.allTaxis)
         else:
             taxiMapping = self.getActions()
             actions = taxiMapping.keys()

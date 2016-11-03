@@ -1,9 +1,7 @@
 import math
-import random
-import sys
-
 import numpy as np
 
+from FixedRandom import FixedRandom
 from TrafficUtil import Traffic
 from src.trafficSimulator.config import *
 
@@ -14,7 +12,7 @@ class ControlSignals(object):
         self.intersection = intersection
         self.time = 0
         self.id = Traffic.uniqueId("ControlSignal")
-        self.flipMultiplier = 2 + random.random() * 0.4 - 0.2
+        self.flipMultiplier = 2 + FixedRandom.random() * 0.4 - 0.2
         self.flipInterval = self.flipMultiplier * LIGHT_FLIP_INTERVAL
         self.stateNum = 0
         self.states = None
@@ -66,7 +64,7 @@ class ControlSignals(object):
                 j += self.pairNum
             self.states.append(l)
             self.states.append(fr)
-        self.stateNum = random.randint(0, len(self.states) - 1)
+        self.stateNum = FixedRandom.randint(0, len(self.states) - 1)
 
     def getSlopeQuadrant(self, road):
         """

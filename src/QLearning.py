@@ -1,5 +1,5 @@
 from collections import Counter
-import random
+from FixedRandom import FixedRandom
 
 
 class QLearning(object):
@@ -96,13 +96,13 @@ class QLearning(object):
         """
         actions = self.env.getAction(state)  # roads
 
-        if random.random() < self.epsilon:
-            action = random.choice(actions)  # exploration
+        if FixedRandom.random() < self.epsilon:
+            action = FixedRandom.choice(actions)  # exploration
         else:
             q = [self.qvalue.get((state, a), 0.0) for a in actions]
             if len(Counter(q)) == 1 and 0.0 in q:
                 # when all actions have not been taken before
-                action = random.choice(actions)
+                action = FixedRandom.choice(actions)
             else:
                 maxQIdx = q.index(max(q))
                 action = actions[maxQIdx]

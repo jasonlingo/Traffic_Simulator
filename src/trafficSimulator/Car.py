@@ -1,7 +1,7 @@
 from __future__ import division
-import sys
 import math
 import time
+from FixedRandom import FixedRandom
 from TrafficUtil import *
 from Trajectory import Trajectory
 from src.trafficSimulator.config import CAR_LENGTH, CAR_WIDTH
@@ -370,7 +370,7 @@ class Taxi(Car):
         :return:
         """
         if self.available or haversine(self.source, self.getCurLocation()) >= 1:  # 1 km
-            if random.random() > 0.5:  #TODO: need to choose a better threshold?
+            if FixedRandom.random() > 0.5:  #TODO: need to choose a better threshold?
                 self.available = not self.available
 
     def setAvailable(self, avail):
