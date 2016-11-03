@@ -2,8 +2,9 @@ from __future__ import division
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 import math
-import random
+from FixedRandom import FixedRandom
 from src.trafficSimulator.config import CLOSE_ALL_CRASH_LANES
 from trafficSimulator.TrafficUtil import CarType
 from trafficSimulator.RealMap import RealMap
@@ -162,7 +163,7 @@ class Environment(QLEnvironment):
     def randomCarAccident(self):
         if not self.cars:
             return
-        crashedCar = random.choice(self.cars.values())
+        crashedCar = FixedRandom.choice(self.cars.values())
         self.crashedCars.add(crashedCar)
         crashedCar.setCrash(True)
         return crashedCar

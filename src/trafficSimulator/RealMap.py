@@ -10,7 +10,7 @@ from Car import *
 from src.Dijkstra import *
 from SinkSource import SinkSource
 import numpy
-import random
+from FixedRandom import FixedRandom
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from Navigation import Navigator
@@ -332,7 +332,7 @@ class RealMap(object):
         visited = set()
         queue = []
 
-        start = self.intersections[random.choice(self.intersections.keys())]
+        start = self.intersections[FixedRandom.choice(self.intersections.keys())]
         visited.add(start.id)
         queue.append(start)
         while queue:
@@ -345,7 +345,7 @@ class RealMap(object):
                         # We also prevent that the random position be set near the intersections by
                         # using a ROAD_OFFSET_FOR_SINK_SOURCE_POINT
                         position = (ROAD_OFFSET_FOR_SINK_SOURCE_POINT +
-                                   random.random() * (1 - 2 * ROAD_OFFSET_FOR_SINK_SOURCE_POINT)) * road.getLength()
+                                   FixedRandom.random() * (1 - 2 * ROAD_OFFSET_FOR_SINK_SOURCE_POINT)) * road.getLength()
                         point = SinkSource(None, road, position)
                         self.sink.add(point)
                         self.source.add(point)
@@ -382,11 +382,11 @@ class RealMap(object):
 
         road = None
         while road is None:
-            tmp = random.choice(roads)
+            tmp = FixedRandom.choice(roads)
             if tmp.getSource() and tmp.getTarget():
                 road = tmp
-        lane = random.choice(road.getLanes())
-        position = random.random() * lane.getLength()  # TODO: check no car at that position
+        lane = FixedRandom.choice(road.getLanes())
+        position = FixedRandom.random() * lane.getLength()  # TODO: check no car at that position
         return lane, position
 
     def cleanTaxis(self):
@@ -428,8 +428,8 @@ class RealMap(object):
             lane, position = self.randomLaneLocation(onMajorRoad)
             car = carType(lane, position)
             if self.checkOverlap(lane, position, car.length):
-                car.destination = sampleOne(self.sink)
                 car.navigator = self.navigator
+                car.destination = sampleOne(self.sink)
                 carList[car.id] = car
                 num -= 1
 
@@ -446,7 +446,7 @@ class RealMap(object):
         intersection and add a car if there is not car at the position.
         """
         for s in sources:
-            numCar = numpy.random.poisson(posLambda)  # number of cars to be added at this source point
+            numCar = FixedRandom.poisson(posLambda)  # number of cars to be added at this source point
             if numCar == 0:
                 continue
             addedCar = 0
