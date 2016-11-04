@@ -4,17 +4,18 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import pygmaps
 import webbrowser
+import numpy
+import time
 from Shapefile import Shapefile
 from Road import Road
 from Car import *
 from src.Dijkstra import *
 from SinkSource import SinkSource
-import numpy
 from FixedRandom import FixedRandom
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 from Navigation import Navigator
 from config import MAJOR_ROAD_MIN_LEN
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 # probabilities for edge intersections to be a sink or source places
 SINK_PROB = 0.15
