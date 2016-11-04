@@ -1,6 +1,9 @@
 from __future__ import division
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 import math
-import time
 from FixedRandom import FixedRandom
 from TrafficUtil import *
 from Trajectory import Trajectory
@@ -125,7 +128,8 @@ class Car(object):
         Use Navigator to find the shortest route for this car to the destination.
         """
         self.route = self.navigator.navigate(self, self.trajectory.getRoad(), self.destination)
-        self.routeSetTime = time.time()
+        # self.routeSetTime = time.time()
+        self.routeSetTime = Traffic.globalTime
 
     def release(self):
         """
@@ -192,6 +196,15 @@ class Car(object):
         # crashed or deleted car cannot move
         if self.crashed:
             return
+
+        # update the route if the previous navigation is set long time ago
+        if self.routeSetTime is None:
+            self.getNavigation()
+        else:
+            setRouteTimeDiff = Traffic.globalTime - self.routeSetTime if Traffic.globalTime >= self.routeSetTime \
+                               else self.routeSetTime - Traffic.globalTime
+            if setRouteTimeDiff >= UPDATE_ROUTE_TIME:
+                self.getNavigation()
 
         # choose a quicker lane
         currentLane = self.trajectory.getLane()
@@ -285,9 +298,8 @@ class Car(object):
 
         :return:
         """
-        # If there is no routing path or the time for getting the routing path is too
-        # long age, update the routing path.
-        if not self.route or time.time() - self.routeSetTime > UPDATE_ROUTE_TIME:
+        # If there is no routing path, then update the routing path.
+        if not self.route:
             self.getNavigation()
 
         nextRoad = self.pickNextRoad()

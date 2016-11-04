@@ -30,6 +30,10 @@ SPEED_LIMIT_ON_CRASH = 10
 MAJOR_ROAD_INIT_CAR_NUM_RATIO = 0.8
 """The percentage that the number of cars on the major roads initially"""
 
+NUM_TOP_TAXIS_TO_CRASH = 10
+"""The number of taxis that arrive the crash location"""
+
+
 # = fixed crash car location ====================
 CRASH_ROAD = "Road_150"
 """Road for the crash"""

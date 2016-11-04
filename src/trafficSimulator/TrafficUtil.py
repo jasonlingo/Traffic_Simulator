@@ -19,6 +19,13 @@ class Traffic(object):
         cls.uniqueid[idType] += 1
         return idType + "_" + str(cls.uniqueid[idType])
 
+    @classmethod
+    def updateGlobalTime(cls, deltaTime):
+        if Traffic.globalTimeLimit - deltaTime < Traffic.globalTime:  # prevent overflow
+            Traffic.globalTime = deltaTime - (Traffic.globalTimeLimit - Traffic.globalTime)
+        else:
+            Traffic.globalTime += deltaTime
+
 class RoadType(object):
     ROAD = "Road"
     INTERSECTION = "Intersection"
