@@ -8,6 +8,7 @@ from FixedRandom import FixedRandom
 from TrafficUtil import *
 from Trajectory import Trajectory
 from src.trafficSimulator.config import CAR_LENGTH, CAR_WIDTH
+from Settings import UPDATE_NAVIGATION
 
 
 class Car(object):
@@ -17,7 +18,7 @@ class Car(object):
 
     SECOND_PER_HOUR = 3600.0
 
-    def __init__(self, lane, position=0, maxSpeed=MAX_SPEED, carType="Car"):
+    def __init__(self, navigator, lane, position=0, maxSpeed=MAX_SPEED, carType="Car"):
         """
         :param lane: the lane that this car is moving on
         :param position: the absolute position of this car in the given lane
@@ -29,6 +30,7 @@ class Car(object):
         # ====================================================================
         self.id = Traffic.uniqueId(carType)                 # the id for this car
         self.isTaxi = False                                 # indicate this car is a general car or a taxi
+        self.called = False                                 # is called for the crashed car
         self.alive = True                                   # when this car is going to reach the sink place
                                                             # (or its destination), self.alive = False
         self.delete = False                                 # indicate this car can be deleted
@@ -51,7 +53,7 @@ class Car(object):
         self.destination = None                             # the destination for this car
         self.route = None                                   # the path to the destination
         self.routeSetTime = None                            # the last time to set the path
-        self.navigator = None                               # Navigator object
+        self.navigator = navigator                          # Navigator object
 
     def __eq__(self, other):
         if not other:
@@ -128,7 +130,6 @@ class Car(object):
         Use Navigator to find the shortest route for this car to the destination.
         """
         self.route = self.navigator.navigate(self, self.trajectory.getRoad(), self.destination)
-        # self.routeSetTime = time.time()
         self.routeSetTime = Traffic.globalTime
 
     def release(self):
@@ -200,7 +201,7 @@ class Car(object):
         # update the route if the previous navigation is set long time ago
         if self.routeSetTime is None:
             self.getNavigation()
-        else:
+        elif UPDATE_NAVIGATION and self.called:
             setRouteTimeDiff = Traffic.globalTime - self.routeSetTime if Traffic.globalTime >= self.routeSetTime \
                                else self.routeSetTime - Traffic.globalTime
             if setRouteTimeDiff >= UPDATE_ROUTE_TIME:
@@ -347,8 +348,8 @@ class Taxi(Car):
     A class that represents a taxi.
     """
 
-    def __init__(self, lane, position, maxSpeed=MAX_SPEED, carType="Taxi"):
-        super(Taxi, self).__init__(lane, position, maxSpeed, carType)
+    def __init__(self, navigator, lane, position, maxSpeed=MAX_SPEED, carType="Taxi"):
+        super(Taxi, self).__init__(navigator, lane, position, maxSpeed, carType)
         self.available = True
         self.destRoad = None
         self.destLane = None
@@ -395,7 +396,6 @@ class Taxi(Car):
         if not self.available:
             return False
         self.setAvailable(False)
-        self.called = True
         self.destRoad = road
         self.destLane = lane
         self.destPosition = position
@@ -405,7 +405,6 @@ class Taxi(Car):
         if not self.available:
             return False
         self.setAvailable(False)
-        self.called = True
         self.setDestination(destination)
         return True
 
@@ -414,5 +413,3 @@ class Taxi(Car):
 
     def setNextLane(self, nextLane):
         self.nextLane = nextLane
-
-

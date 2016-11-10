@@ -2,6 +2,7 @@ from __future__ import division
 import time
 import heapq
 from Settings import SPEED_LIMIT_ON_CRASH
+from Settings import TIME_FOR_ACCIDENT
 from src.trafficSimulator.config import METER_TYPE
 from src.trafficSimulator.config import POI_LAMBDA
 from trafficSimulator.SinkSource import SinkSource
@@ -41,6 +42,8 @@ class TrafficController(object):
 
         self.cars = self.env.getCars()
         self.taxis = self.env.getTaxis()
+
+        self.carCrashed = False
         self.crashedCars = []
         self.calledTaxi = []
         self.arrivedTaxiNum = 0
@@ -58,25 +61,18 @@ class TrafficController(object):
         time.sleep(5)
         self.env.setResetFlag(False)
 
-        # used to delay the happen of a car accident
-        timeToAccident = 0
-        TIME_FOR_ACCIDENT = 60
-
         # preTime = time.time()
-        deltaTime = 0.3
+        deltaTime = 0.3  # unit: second
 
         while not self.isCalledTaxiArrived or self.arrivedTaxiNum < self.numTopTaxi:
             # clear the cached average speed of roads in the previous loop.
             self.env.realMap.clearRoadAvgSpeed()  # fixme: delete this
 
+            # increment the global timer
             Traffic.updateGlobalTime(deltaTime)
 
-            # make the car crash happen after TIME_FOR_ACCIDENT
-            if timeToAccident < TIME_FOR_ACCIDENT:
-                timeToAccident += deltaTime
-
             # make a car crash at a random or fixed location
-            if not self.crashedCars and timeToAccident >= TIME_FOR_ACCIDENT:
+            if not self.crashedCars and Traffic.globalTime >= TIME_FOR_ACCIDENT:
                 if self.crashRoad:  # pre-defined crash location
                     crashedCar = self.env.fixedCarAccident(self.crashRoad, self.crashPos)
                 else:
@@ -85,6 +81,7 @@ class TrafficController(object):
                 if crashedCar:
                     # set the speed limit of the road where this crash happens and then
                     # call a taxi to the crash location
+                    self.carCrashed = True
                     self.crashedCars.append(crashedCar)
                     self.changeCrashRoadSpeed(crashedCar)
                     self.callTaxiForCrash(crashedCar)
@@ -121,6 +118,7 @@ class TrafficController(object):
             maxCallTimes -= 1
             nearestTaxi = self.findNearestTaxi(crashLoc)
             if nearestTaxi and self.callTaxi(nearestTaxi, crashLoc):
+                nearestTaxi.called = True
                 self.calledTaxi.append(nearestTaxi)
                 hasCalledTaxi = True
         for taxi in self.taxis.values():
@@ -144,32 +142,42 @@ class TrafficController(object):
             if car.delete:
                 car.release()
                 deletedCars.append(car.id)
-                print ("%s went to its destination. [%d cars, %d taxis]" % (car.id,
-                                                                            len(self.cars) - len(deletedCars),
-                                                                            len(self.taxis)))
+                # TODO remove comment below
+                # print ("%s went to its destination. [%d cars, %d taxis]" % (car.id,
+                #                                                            len(self.cars) - len(deletedCars),
+                #                                                            len(self.taxis)))
         for carId in deletedCars:
             del self.cars[carId]
 
     def assignDestinationToTaxis(self):
+        """
+        If a car crashed, then delete the arrived taxis. Otherwise, assign a new destination to the taxis.
+        """
         deleteTaxi = []
         for taxi in self.taxis.values():
             if taxi.delete:
-                taxi.release()
-                deleteTaxi.append(taxi)
-                self.arrivedTaxiNum += 1
-                if taxi.called:
-                    self.isCalledTaxiArrived = True
-                    print "=====>",
-                print "%s arrived the crash location at time %d (total %d taxis arrived)\n" % (taxi.id, Traffic.globalTime, self.arrivedTaxiNum)
-                # if taxi.called:
-                #     print "\n\n%s arrived the crash location!!\n\n" % taxi.id
-                #     taxi.alive = False
-                # else:
-                #     print "%s arrived its destination. Assign a new destination to it." % taxi.id
-                #     newDestination = self.env.realMap.getRandomDestination()
-                #     taxi.destination = newDestination
-                #     taxi.delete = False
-                #     taxi.alive = True  #FIXME: False
+                if self.carCrashed:
+                    taxi.release()
+                    deleteTaxi.append(taxi)
+                    self.arrivedTaxiNum += 1
+
+                    if taxi.called:
+                        self.isCalledTaxiArrived = True
+                        print "=====>",
+                    print "%s arrived the crash location at time %d (total %d taxis arrived)\n" % \
+                                                 (taxi.id, Traffic.globalTime, self.arrivedTaxiNum)
+                else:
+                    if taxi.called:
+                        print "\n\n%s arrived the crash location!!\n\n" % taxi.id9
+                        taxi.alive = False
+                    else:
+                        print "%s arrived its destination. Assign a new destination to it." % taxi.id
+                        newDestination = self.env.realMap.getRandomDestination()
+                        taxi.destination = newDestination
+                        taxi.delete = False
+                        taxi.alive = True
+
+        # If there is a car crashed, then delete the taxi if it arrives the crash location.
         for taxi in deleteTaxi:
             del self.taxis[taxi.id]
 
@@ -215,21 +223,13 @@ class TrafficController(object):
         heapq.heappush(frontier, start)
 
         while frontier and frontier[0][0] < fastTaxi[0]:
-            # print frontier
             curr = heapq.heappop(frontier)
-            # if curr in intersectionTime:
-            #     print "del curr"
-            #     del intersectionTime[curr]
             for road in curr[1].getInRoads():
                 if road in roadTrafficTime:
                     trafficTime = roadTrafficTime[road]
                 else:
                     trafficTime = road.getAvgTrafficTime()
                     roadTrafficTime[road] = trafficTime
-
-                # # when roadAvgSpeed is 0, then the time for a car to go through this road is infinity
-                # if trafficTime == 0:
-                #     continue
 
                 for car in road.getCars():
                     if car.isTaxi and car.isAvailable():

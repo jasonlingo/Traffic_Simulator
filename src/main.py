@@ -7,6 +7,8 @@ from Settings import CRASH_RELATIVE_POSITION
 from Settings import CRASH_ROAD
 from Settings import MAJOR_ROAD_INIT_CAR_NUM_RATIO
 from Settings import NUM_TOP_TAXIS_TO_CRASH
+from Settings import RANDOM_SEED
+from Settings import UPDATE_NAVIGATION
 from trafficSimulator.RealMap import RealMap
 from trafficSimulator.AnimatedMap import AnimatedMap
 from TrafficController import TrafficController
@@ -17,6 +19,9 @@ import matplotlib.pyplot as plt
 if __name__ == '__main__':
 
     DEBUG = True
+
+    print "Random seed = %d" % RANDOM_SEED
+    print "Update_navigation:", UPDATE_NAVIGATION
 
     # def runExp():
     #     """

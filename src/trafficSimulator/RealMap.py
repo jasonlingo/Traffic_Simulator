@@ -72,7 +72,6 @@ class RealMap(object):
         self.reset = False                # indicate whether it is in the middle (reset) of experiments
         self.locDict = defaultdict(list)  # recode which car is on which lane
         self.aniMapPlotOK = False         # indicate the map has been plotted
-        # self.carRunsOk = False            # TODO: may not need this
         self.roadAvgSpeed = {}            # the cache for the average speed of each road
 
 
@@ -427,12 +426,13 @@ class RealMap(object):
 
         while num:
             lane, position = self.randomLaneLocation(onMajorRoad)
-            car = carType(lane, position)
+            car = carType(self.navigator, lane, position)
             if self.checkOverlap(lane, position, car.length):
-                car.navigator = self.navigator
                 car.destination = sampleOne(self.sink)
                 carList[car.id] = car
                 num -= 1
+            else:
+                car.release()
 
     def addCarFromSource(self, posLambda):
         self.addCarFromGivenSource(self.source, posLambda)
@@ -459,18 +459,17 @@ class RealMap(object):
                     addCar = True
                     for car in lane.getCars():
                         if car.trajectory.getAbsolutePosition() < CAR_LENGTH:
-                            # print "front car is too close to the new car"
                             addCar = False
                             break
                     if addCar:
                         addedCar += 1
                         destination = sampleOne(self.sink)
-                        newCar = Car(lane, 0)
-                        newCar.navigator = self.navigator
+                        newCar = Car(self.navigator, lane, 0)
                         newCar.setDestination(destination)
                         self.cars[newCar.id] = newCar
-                        print "Add a new car: %s. [%d cars, %d taxis]" %\
-                            (newCar.id, len(self.cars), len(self.taxis))
+                        # TODO remove comment below
+                        # print "Add a new car: %s. [%d cars, %d taxis]" %\
+                        #     (newCar.id, len(self.cars), len(self.taxis))
                         if addedCar == numCar:
                             break
             else:
@@ -486,13 +485,13 @@ class RealMap(object):
                     if addCar:
                         addedCar += 1
                         destination = sampleOne(self.sink)
-                        newCar = Car(lane, pos)
-                        newCar.navigator = self.navigator
+                        newCar = Car(self.navigator, lane, pos)
                         newCar.setDestination(destination)
                         self.cars[newCar.id] = newCar
                         newCar.destination = sampleOne(self.sink)
-                        print "Add a new car: %s. [%d cars, %d taxis]" %\
-                              (newCar.id, len(self.cars), len(self.taxis))
+                        # TODO remove comment below
+                        # print "Add a new car: %s. [%d cars, %d taxis]" %\
+                        #       (newCar.id, len(self.cars), len(self.taxis))
                         if addedCar == numCar:
                             break
 
@@ -508,13 +507,13 @@ class RealMap(object):
             exit(0)
         road = self.roads[crashRoad]
         lane = road.getLanes()[0]
-        car = Car(lane, crashPos * road.getLength())
+        car = Car(self.navigator, lane, crashPos * road.getLength())
         if self.checkOverlap(lane, crashPos, car.length):
             car.destination = sampleOne(self.sink)
-            car.navigator = self.navigator
             self.cars[car.id] = car
             return car
         else:
+            car.release()
             return None
 
     def getRandomDestination(self):
