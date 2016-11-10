@@ -8,7 +8,7 @@ class FixedRandom(object):
     Fix the random seed so that the randomness can be fixed for every experiment.
     """
 
-    rand = random.Random(RANDOM_SEED)  # fix the random seed
+    rand = random.Random(RANDOM_SEED)
     np.random.seed(RANDOM_SEED)
 
     @classmethod
