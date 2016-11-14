@@ -110,7 +110,7 @@ class Lane(object):
         :param carPos: (LanePosition)
         """
         if carPos.id in self.carsPosition:
-            print "car is already here"
+            print carPos.car.id, carPos.id, "is already on", self.road.id
         else:
             self.carsPosition[carPos.id] = carPos
 

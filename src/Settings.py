@@ -36,13 +36,13 @@ NUM_TOP_TAXIS_TO_CRASH = 10
 TIME_FOR_ACCIDENT = 60
 """The time (in seconds) that a car crashes"""
 
-RANDOM_SEED = 1
+RANDOM_SEED = 17
 """The seed for the FixedRandom"""
 
-UPDATE_NAVIGATION = False
+UPDATE_NAVIGATION = True
 """Indicate whether to update the navigation route every certain time period"""
 
-# = fixed crash car location ====================
+# fixed crash car location ====================
 CRASH_ROAD = "Road_150"
 """Road for the crash"""
 

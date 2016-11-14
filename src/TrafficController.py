@@ -1,4 +1,5 @@
 from __future__ import division
+import sys
 import time
 import heapq
 from Settings import SPEED_LIMIT_ON_CRASH
@@ -107,7 +108,7 @@ class TrafficController(object):
             # make traffic light change
             self.env.updateContralSignal(deltaTime)
 
-            # time.sleep(deltaTime * 0.7)
+            time.sleep(0.2)
 
     def callTaxiForCrash(self, crashedCar):
         crashRoad = crashedCar.trajectory.getRoad()
@@ -199,11 +200,11 @@ class TrafficController(object):
         """
         print "Searching taxis =========================================="
 
-        fastTaxi = [Traffic.globalTimeLimit, None]
+        fastTaxi = [sys.maxint, None]
 
         # check if there is a taxi on the same road
         for car in loc.road.getCars():
-            if car.isTaxi and car.isAvailable():
+            if car.isTaxi and car.available:
                 if car.trajectory.current.position <= loc.position:
                     if not fastTaxi[1] or loc.position - car.trajectory.current.position < fastTaxi[0]:
                         fastTaxi[0] = loc.position - car.trajectory.current.position
@@ -232,7 +233,7 @@ class TrafficController(object):
                     roadTrafficTime[road] = trafficTime
 
                 for car in road.getCars():
-                    if car.isTaxi and car.isAvailable():
+                    if car.isTaxi and car.available:
                         time = curr[0] + (1 - car.trajectory.current.position) * trafficTime
                         if time < fastTaxi[0]:
                             print "found faster %s that can arrive the crash location in %f seconds" % (car.id, time)
@@ -250,6 +251,8 @@ class TrafficController(object):
                     if intersectionTime[inter][0] > time:
                         if intersectionTime[inter] in frontier:
                             frontier.remove(intersectionTime[inter])
+                        else:
+                            print "remove, not found"
                         intersectionTime[inter] = next
                         heapq.heappush(frontier, next)
                 else:

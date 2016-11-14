@@ -91,7 +91,7 @@ class DispatchQL(QLearning):
         The state should include the available taxis' location and the goal's location.
         TODO: considering a long road, we should include the relative position of a taxi on a road.
         """
-        return (self.goal, tuple(sorted([taxi.trajectory.current.lane.road.id for taxi in self.exp.allTaxis if taxi.isAvailable() or taxi.isCalled()])))
+        return (self.goal, tuple(sorted([taxi.trajectory.current.lane.road.id for taxi in self.exp.allTaxis if taxi.available or taxi.isCalled()])))
 
     def getActions(self):
         taxiMapping = {}

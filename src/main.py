@@ -9,6 +9,7 @@ from Settings import MAJOR_ROAD_INIT_CAR_NUM_RATIO
 from Settings import NUM_TOP_TAXIS_TO_CRASH
 from Settings import RANDOM_SEED
 from Settings import UPDATE_NAVIGATION
+from trafficSimulator.config import AVG_TIME_PERIOD
 from trafficSimulator.RealMap import RealMap
 from trafficSimulator.AnimatedMap import AnimatedMap
 from TrafficController import TrafficController
@@ -22,6 +23,7 @@ if __name__ == '__main__':
 
     print "Random seed = %d" % RANDOM_SEED
     print "Update_navigation:", UPDATE_NAVIGATION
+    print "Time for average speed:", AVG_TIME_PERIOD
 
     # def runExp():
     #     """
@@ -57,9 +59,7 @@ if __name__ == '__main__':
                                     CRASH_RELATIVE_POSITION,
                                     NUM_TOP_TAXIS_TO_CRASH)
 
-    # For debugging usage. If debugging mode is turned on, then it will not
-    if DEBUG:
-        # runExp()
+    if DEBUG:  # For debugging usage.
         trafficCtrl.run()
     else:
         # Traffic simulator thread

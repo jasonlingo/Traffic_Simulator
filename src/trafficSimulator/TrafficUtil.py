@@ -26,13 +26,16 @@ class Traffic(object):
         else:
             Traffic.globalTime += deltaTime
 
+
 class RoadType(object):
     ROAD = "Road"
     INTERSECTION = "Intersection"
 
+
 class CarType(object):
     CAR = "car"
     TAXI = "taxi"
+
 
 class DistanceUnit(object):
     KM = "KM"
@@ -43,6 +46,7 @@ class DistanceUnit(object):
 
     # The radius of the earth in miles
     EARTH_RADIUS_MILE = 3959.0
+
 
 def sampleOne(list):
     """
