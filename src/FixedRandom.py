@@ -1,5 +1,6 @@
 import random
 import numpy as np
+from Settings import RANDOM_SEED
 
 
 class FixedRandom(object):
@@ -7,9 +8,8 @@ class FixedRandom(object):
     Fix the random seed so that the randomness can be fixed for every experiment.
     """
 
-    SEED = 0
-    rand = random.Random(SEED)  # fix the random seed
-    np.random.seed(SEED)
+    rand = random.Random(RANDOM_SEED)
+    np.random.seed(RANDOM_SEED)
 
     @classmethod
     def random(cls):

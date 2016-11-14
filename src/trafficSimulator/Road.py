@@ -97,28 +97,6 @@ class Road(object):
     def getSpeedLimit(self):
         return self.speedLimit
 
-    # def updateAvgSpeed(self):
-    #     """
-    #     Calculate the average speed of the recent speed data (most recent 100 records) of this road.
-    #     Then store the result to "self.avgSpeed."
-    #     """
-    #     print "update avg speed:", self.id, self.avgSpeed, "->",
-    #     curAvgSpeed = self.getCurAvgSpeed()
-    #     deleteSpeed = None
-    #     if self.recentSpeedList >= 100:
-    #         deleteSpeed = self.recentSpeedList.pop(0)
-    #     self.recentSpeedList.append(curAvgSpeed)
-    #
-    #     if deleteSpeed:
-    #         self.avgSpeed = (self.avgSpeed * len(self.recentSpeedList) - deleteSpeed + curAvgSpeed) / len(self.recentSpeedList)
-    #     else:
-    #         self.avgSpeed = (self.avgSpeed * (len(self.recentSpeedList) - 1) + curAvgSpeed) / len(self.recentSpeedList)
-    #
-    #     print self.avgSpeed
-
-    def getAvgSpeed(self):
-        return max(self.avgSpeed, 0.0)
-
     def setLength(self):
         """
         Calculate the road length from the source to the target intersections.
@@ -137,9 +115,6 @@ class Road(object):
             if self.bottom <= cor.getCoords()[1] <= self.top and self.left <= cor.getCoords()[0] <= self.right:
                 return True
         return False
-
-    # def addIntersection(self, intersection):
-    #     self.connectedIntersections.append(intersection)
 
     def isBlocked(self):
         """
@@ -206,19 +181,6 @@ class Road(object):
                 fastestLane = lane
         return fastestLane
 
-    # def getTurnDirection(self, other):
-    #     """
-    #     Each road has only one lane for now. So it returns 0.
-    #     :param other: the next road
-    #     :return: the turn number
-    #     """
-    #     if self.target != other.source:
-    #         print "invalid roads"
-    #         return
-    #     # return (other.sourceSideId - self.targetSideId - 1 + 8) % 4 #FIXME: this is the original version
-    #
-    #     return random.choice([x for x in range(len(other.lanes))])
-
     def getTurnDirection(self, nextRoad):
         """
         Find the road of the next turn and return the corresponding road order.
@@ -258,47 +220,21 @@ class Road(object):
     def update(self):
         if not self.source or not self.target:
             return
-        # self.sourceSideId = self.source.rect.getSectorId(self.target.rect.center())
-        # self.sourceSide = self.source.rect.getSide(self.sourceSideId).subsegment(0.5, 1.0)
-        # self.targetSideId = self.target.rect.getSectorId(self.source.rect.center())
-        # self.targetSide = self.target.rect.getSide(self.targetSideId).subsegment(0, 0.5)
-        # self.lanesNumber = min(self.sourceSide.length, self.targetSide.length)
-        # self.lanesNumber = max(2, float(self.lanesNumber) / Traffic.settings.gridSize)
-        # sourceSplits = self.sourceSide.split(self.lanesNumber, True)
-        # targetSplits = self.targetSide.split(self.lanesNumber)
-        # if self.lanes is None or len(self.lanes) < self.lanesNumber:
-        #     if self.lanes is None:
-        #         self.lanes = []
-        #     for i in range(self.lanesNumber):
-        #         if self.lanes[i] is None:
-        #             self.lanes[i] = Lane(sourceSplits[i], targetSplits[i], self)
-        #
-        # # results = []
-        # for i in range(self.lanesNumber):
-        #     self.lanes[i].sourceSegment = sourceSplits[i]
-        #     self.lanes[i].targetSegment = targetSplits[i]
-        #     self.lanes[i].leftAdjacent = self.lanes[i + 1]
-        #     self.lanes[i].rightAdjacent = self.lanes[i - 1]
-        #     self.lanes[i].leftmostAdjacent = self.lanes[self.lanesNumber - 1]
-        #     self.lanes[i].rightmostAdjacent = self.lanes[0]
-            # results.append(self.lanes[i].update())
-        # return results
-        # if not self.lanes:
-        #     self.lanes.append(Lane(self))
+
         while len(self.lanes) < MAX_ROAD_LANE_NUM:
             self.lanes.append(Lane(self))
 
         for lane in self.lanes:
             lane.laneIndex()  # find the index for each lane
 
-    def addCarTime(self, carId, curtTime, pos):
-        self.roadSpeed.addCarTime(carId, curtTime, pos)
+    def addCarDriveTime(self, carId, curtTime, pos):
+        self.roadSpeed.addCarDriveTime(carId, curtTime, pos)
 
-    def deleteCarTime(self, carId, curtTime):
-        self.roadSpeed.deleteCarTime(carId, curtTime)
+    def deleteCarDriveTime(self, carId, curtTime, endPos):
+        self.roadSpeed.deleteCarDriveTime(carId, curtTime, endPos)
 
-    def updateCarTime(self, carId, pos):
-        self.roadSpeed.updateCarTime(carId, pos)
+    def updateCarDriveTime(self, carId, pos):
+        self.roadSpeed.updateCarDriveTime(carId, pos)
 
 
 class RoadSpeed(object):
@@ -306,87 +242,57 @@ class RoadSpeed(object):
     The class used to calculate average speed a road within certain time period.
     """
 
-    class DriveTime(object):
-
-        def __init__(self, startTime, pos):
-            """
-            :param startTime: (int) the timestamp when the car is entering the road
-            :param pos: (float) relative position (0~1)
-            """
-            self.startTime = startTime
-            self.endTime = None
-            self.startingPos = pos
-            self.curtPos = pos
-            self.crash = False
-
-        def getTrafficTime(self, curtTime):
-            """
-            :param curtTime:
-            :return:
-            """
-            end = self.endTime if self.endTime else curtTime
-            pos = self.curtPos - self.startingPos
-            if pos == 0:
-                if end == self.startTime:  # just enter this road, don't count this
-                    return None
-                else:
-                    pos = 0.1  # multiply the time by 10 times
-
-            if self.startTime <= end:
-                return ((end - self.startTime) / pos) * (1 - self.startingPos)
-            else:
-                return ((Traffic.globalTimeLimit - (self.startTime - end)) / pos) * (1 - self.startingPos)
-
-
     def __init__(self, road):
         self.road = road
         self.driveTimes = []
         self.cars = {}
         self.crashedCar = []
 
-    def addCarTime(self, carId, curtTime, pos):
+    def addCarDriveTime(self, carId, curtTime, pos):
         """
         Add a record to track the time of a car drives on this road.
         :param carId:
         :param curtTime:
         :param pos: (float) relative position
         """
-        driveTime = self.DriveTime(curtTime, pos)
+        driveTime = DriveTime(curtTime, pos)
         self.driveTimes.append(driveTime)
         self.cars[carId] = driveTime
 
-    def deleteCarTime(self, carId, curtTime):
+    def deleteCarDriveTime(self, carId, curtTime, endPos):
         """
         When a car leave this road, record the time.
         :param carId:
         :return:
         """
         if carId in self.cars:
-            self.cars[carId].endTime = curtTime
+            driveTime = self.cars[carId]
+            driveTime.endTime = curtTime
+            driveTime.endPos = min(endPos, 1)  # because we are using 0~1 to represent the relative position
             del self.cars[carId]
 
-    def updateCarTime(self, carId, pos):
+    def updateCarDriveTime(self, carId, pos):
         if carId not in self.cars:
             print "no %s in this road" % carId
             return
-        self.cars[carId].pos = pos
+        self.cars[carId].curtPos = min(pos, 1)
 
     def getAvgDriveTime(self, curtTime):
         """
         Calculate the average time for a car to drive pass through this road in recent time.
         If there is no car, return the speed limit of the road.
         :param curtTime:
-        :return:
+        :return: average traffic time in second
         """
         # pop those drive time that end more than AVG_TIME_PERIOD ago
         # since the time will re-start from 0 when it reach the limit, check the current time is >= or < the drive time
         expiredDriveTime = []
         for driveTime in self.driveTimes:
-            if not driveTime.endTime:
+            if driveTime.endTime is None:
                 continue
             if curtTime >= driveTime.endTime and curtTime - driveTime.endTime > AVG_TIME_PERIOD:
                 expiredDriveTime.append(driveTime)
-            elif curtTime < driveTime.endTime and sys.maxint - (driveTime.endTime - curtTime) > AVG_TIME_PERIOD:
+            elif curtTime < driveTime.endTime and Traffic.globalTimeLimit - (driveTime.endTime - curtTime) > AVG_TIME_PERIOD:
                 expiredDriveTime.append(driveTime)
 
         # delete expired DriveTime
@@ -394,9 +300,9 @@ class RoadSpeed(object):
             self.driveTimes.remove(driveTime)
 
         times = [x.getTrafficTime(curtTime) for x in self.driveTimes]
+        times = [x for x in times if x is not None]
         if times:
-            return sum([x for x in times if x]) / len(times)
-            # return sum( map(lambda x: x.getTrafficTime(curtTime), self.driveTime) ) / len(self.driveTime)
+            return sum(times) / len(times)
         else:
             return (self.road.getLength() / self.road.speedLimit) * 3600
 
@@ -406,3 +312,40 @@ class RoadSpeed(object):
         self.crashedCar.append(driveTime)
         driveTime.crash = True
 
+
+class DriveTime(object):
+
+    def __init__(self, startTime, pos):
+        """
+        :param startTime: (int) the timestamp when the car is entering the road
+        :param pos: (float) relative position (0~1)
+        """
+        self.startTime = startTime
+        self.endTime = None
+        self.startingPos = pos
+        self.curtPos = pos
+        self.endPos = None
+        self.crash = False
+
+    def getTrafficTime(self, curtTime):
+        """
+        :param curtTime:
+        :return:
+        """
+        if self.endTime:
+            if self.endPos == self.startingPos:
+                return None
+            return (self.endTime - self.startTime) / (self.endPos - self.startingPos)
+
+        posDiff = self.curtPos - self.startingPos
+        if posDiff == 0:
+            return None
+            # if end == self.startTime:  # just enter this road, don't count this
+            #     return None
+            # else:
+            #     pos = (1 - self.startingPos) * 0.1  # multiply the time by 10
+
+        if self.startTime <= curtTime:
+            return (curtTime - self.startTime) / posDiff
+        else:
+            return (Traffic.globalTimeLimit - (self.startTime - curtTime)) / posDiff

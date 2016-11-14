@@ -7,7 +7,8 @@ import math
 from FixedRandom import FixedRandom
 from TrafficUtil import *
 from Trajectory import Trajectory
-from src.trafficSimulator.config import CAR_LENGTH, CAR_WIDTH
+from src.trafficSimulator.config import CAR_LENGTH, CAR_WIDTH, UPDATE_ROUTE_TIME
+from Settings import UPDATE_NAVIGATION
 
 
 class Car(object):
@@ -17,7 +18,7 @@ class Car(object):
 
     SECOND_PER_HOUR = 3600.0
 
-    def __init__(self, lane, position=0, maxSpeed=MAX_SPEED, carType="Car"):
+    def __init__(self, navigator, lane, position=0, maxSpeed=MAX_SPEED, carType="Car"):
         """
         :param lane: the lane that this car is moving on
         :param position: the absolute position of this car in the given lane
@@ -29,6 +30,7 @@ class Car(object):
         # ====================================================================
         self.id = Traffic.uniqueId(carType)                 # the id for this car
         self.isTaxi = False                                 # indicate this car is a general car or a taxi
+        self.called = False                                 # is called for the crashed car
         self.alive = True                                   # when this car is going to reach the sink place
                                                             # (or its destination), self.alive = False
         self.delete = False                                 # indicate this car can be deleted
@@ -43,7 +45,6 @@ class Car(object):
         self.width = CAR_WIDTH
         self.trajectory = Trajectory(self, lane, position)  # manage the moving trajectory of this car
         self.nextLane = None                                # the next lane this can is going to
-        self.preferedLane = None                            # the lane that this car is going to switch
 
         # ====================================================================
         # the destination and route for this care
@@ -51,7 +52,7 @@ class Car(object):
         self.destination = None                             # the destination for this car
         self.route = None                                   # the path to the destination
         self.routeSetTime = None                            # the last time to set the path
-        self.navigator = None                               # Navigator object
+        self.navigator = navigator                          # Navigator object
 
     def __eq__(self, other):
         if not other:
@@ -116,19 +117,11 @@ class Car(object):
                           max(round(speed, 10), 0),
                           self.trajectory.getRoad().getSpeedLimit()])
 
-    # def getDirection(self):
-    #     """
-    #     Get the current direction of this car.
-    #     :return:
-    #     """
-    #     return self.trajectory.direction  #FIXME: error attribute
-
     def getNavigation(self):
         """
         Use Navigator to find the shortest route for this car to the destination.
         """
         self.route = self.navigator.navigate(self, self.trajectory.getRoad(), self.destination)
-        # self.routeSetTime = time.time()
         self.routeSetTime = Traffic.globalTime
 
     def release(self):
@@ -197,41 +190,47 @@ class Car(object):
         if self.crashed:
             return
 
-        # update the route if the previous navigation is set long time ago
+        self.updateNavigation()
+        self.switchToQuickerLane()
+        step = self.calcMovingDist(second)
+        self.makeTurn(step)
+        self.setAliveAndDeleteFlags()
+        self.trajectory.moveForward(step)
+
+    def updateNavigation(self):
         if self.routeSetTime is None:
             self.getNavigation()
-        else:
-            setRouteTimeDiff = Traffic.globalTime - self.routeSetTime if Traffic.globalTime >= self.routeSetTime \
-                               else self.routeSetTime - Traffic.globalTime
+        elif UPDATE_NAVIGATION and self.called:
+            if Traffic.globalTime >= self.routeSetTime:
+                setRouteTimeDiff = Traffic.globalTime - self.routeSetTime
+            else:
+                setRouteTimeDiff = Traffic.globalTimeLimit - (self.routeSetTime - Traffic.globalTime)
             if setRouteTimeDiff >= UPDATE_ROUTE_TIME:
                 self.getNavigation()
 
-        # choose a quicker lane
+    def switchToQuickerLane(self):
         currentLane = self.trajectory.getLane()
         preferedLane = self.getPreferedLane()
         if preferedLane != currentLane:
             self.trajectory.switchLane(preferedLane)
 
-        # if (not self.trajectory.isChangingLanes) and self.nextLane:
-        #     currentLane = self.trajectory.current.lane
-        #     turnNumber = currentLane.getTurnDirection(self.nextLane)
-
-        # update speed and calculate moving distance
+    def calcMovingDist(self, second):
         acceleration = self.getAcceleration()
         self.setSpeed(self.speed + acceleration * second * Car.SECOND_PER_HOUR)
         step = max(self.speed * second / Car.SECOND_PER_HOUR + 0.5 * acceleration * math.pow(second, 2), 0)
         _, nextCarDist = self.trajectory.nextCarDistance()
         nextCarDist = max(nextCarDist, 0)
-        step = min(nextCarDist, step)
+        return min(nextCarDist, step)
+
+    def makeTurn(self, step):
         if self.trajectory.timeToMakeTurn(step):
             if self.nextLane is None:
                 self.pickNextLane()
 
+    def setAliveAndDeleteFlags(self):
         if self.alive and self.reachedDestination():
             self.alive = False
             self.delete = True
-
-        self.trajectory.moveForward(step)
 
     def getPreferedLane(self):
         """
@@ -278,6 +277,7 @@ class Car(object):
             targetInter = self.trajectory.getRoad().getTarget()
             while self.route:
                 if self.route[0].getSource() == targetInter:
+                    # print self.id, "pickNextRoad using route:", self.route[0].id
                     return self.route[0]
                 self.route.pop(0)
 
@@ -291,11 +291,11 @@ class Car(object):
             if not possibleRoads:
                 print "[%s]: There is no random road" % self.id
                 return None
-        return sampleOne(possibleRoads)
+        nextRoad = sampleOne(possibleRoads)
+        return nextRoad
 
     def pickNextLane(self):
         """
-
         :return:
         """
         # If there is no routing path, then update the routing path.
@@ -303,12 +303,8 @@ class Car(object):
             self.getNavigation()
 
         nextRoad = self.pickNextRoad()
-
         if not nextRoad:
             return None
-        # turnNumber = self.trajectory.current.lane.getTurnDirection(nextRoad)
-        # laneNumber = self.getLaneNumber(nextRoad)
-        # self.nextLane = nextRoad.lanes[laneNumber]
         self.nextLane = self.getLaneNumber(nextRoad)
         if not self.nextLane:
             print "[%s]: cannot pick next lane" % self.id
@@ -323,23 +319,14 @@ class Car(object):
             return nextRoad.getLanes()[-1]
         else:
             return nextRoad.getLanes()[0]
-        # return nextRoad.getFastestLane()
 
     def popNextLane(self):
         nextLane = self.nextLane
         self.nextLane = None
-        self.preferedLane = None
         return nextLane
 
     def setNextLane(self, lane):
         self.nextLane = lane
-
-    def getCurLocation(self):
-        """
-        Get the car's current coordinates and return it.
-        :return:
-        """
-        pass
 
 
 class Taxi(Car):
@@ -347,8 +334,8 @@ class Taxi(Car):
     A class that represents a taxi.
     """
 
-    def __init__(self, lane, position, maxSpeed=MAX_SPEED, carType="Taxi"):
-        super(Taxi, self).__init__(lane, position, maxSpeed, carType)
+    def __init__(self, navigator, lane, position, maxSpeed=MAX_SPEED, carType="Taxi"):
+        super(Taxi, self).__init__(navigator, lane, position, maxSpeed, carType)
         self.available = True
         self.destRoad = None
         self.destLane = None
@@ -361,41 +348,12 @@ class Taxi(Car):
         Set the destination of this trip.
         :param destination: the coordinates of the destination
         """
-        if self.called:
-            print "%s is updating its navigation..." % self.id
         super(Taxi, self).setDestination(destination)
-
-
-    # def setSource(self, source):
-    #     """
-    #     Set the source coordinates of this trip.
-    #     :param source: the coordinates of the source location
-    #     """
-    #     self.source = source
-
-    def setRandomAvailability(self):
-        """
-        If the distance (here we simply use direct line distance) between the previous
-        location where the availability is changed to False and the current location
-        is within some certain distance, then the availability will not change.
-        Otherwise, the availability will change randomly.
-        :return:
-        """
-        if self.available or haversine(self.source, self.getCurLocation()) >= 1:  # 1 km
-            if FixedRandom.random() > 0.5:  #TODO: need to choose a better threshold?
-                self.available = not self.available
-
-    def setAvailable(self, avail):
-        self.available = avail
-
-    def isAvailable(self):
-        return self.available
 
     def beenCalled(self, road, lane, position):
         if not self.available:
             return False
-        self.setAvailable(False)
-        self.called = True
+        self.available = False
         self.destRoad = road
         self.destLane = lane
         self.destPosition = position
@@ -404,15 +362,9 @@ class Taxi(Car):
     def calledByDestination(self, destination):
         if not self.available:
             return False
-        self.setAvailable(False)
-        self.called = True
+        self.available = False
         self.setDestination(destination)
         return True
 
     def isCalled(self):
         return self.called
-
-    def setNextLane(self, nextLane):
-        self.nextLane = nextLane
-
-

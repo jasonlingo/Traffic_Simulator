@@ -33,8 +33,16 @@ MAJOR_ROAD_INIT_CAR_NUM_RATIO = 0.8
 NUM_TOP_TAXIS_TO_CRASH = 10
 """The number of taxis that arrive the crash location"""
 
+TIME_FOR_ACCIDENT = 60
+"""The time (in seconds) that a car crashes"""
 
-# = fixed crash car location ====================
+RANDOM_SEED = 17
+"""The seed for the FixedRandom"""
+
+UPDATE_NAVIGATION = True
+"""Indicate whether to update the navigation route every certain time period"""
+
+# fixed crash car location ====================
 CRASH_ROAD = "Road_150"
 """Road for the crash"""
 

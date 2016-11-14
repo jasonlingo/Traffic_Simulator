@@ -1,29 +1,33 @@
-import sys
-import heapq
+# import heapq
 #
-# heap = []
-# heapq.heappush(heap, (2, "a"))
-# heapq.heappush(heap, (4, "b"))
-# heapq.heappush(heap, (1, "c"))
+# class Weight(object):
 #
-# # heap.remove((2, "a"))
+#     def __init__(self, pri, name):
+#         self.pri = pri
+#         self.name = name
 #
-# while heap:
-#     print heap
-#     if (2, "a") in heap:
-#         heap.remove((2, "a"))
-#     print heapq.heappop(heap)
-
-
-# x = [i * 2 for i in range(20)]
-# print x
+#     def __cmp__(self, other):
+#         return cmp(self.pri, other.pri)
 #
-# delete = []
-# for i in x:
-#     if i % 2 == 0:
-#         delete.append(i)
 #
-# for i in delete:
-#     x.remove(i)
+# A = Weight(10, "A")
+# B = Weight(5, "B")
+# C = Weight(10.111, "C")
+# D = Weight(0.1, "D")
 #
-# print x
+# queue = []
+# heapq.heappush(queue, A)
+# heapq.heappush(queue, B)
+# heapq.heappush(queue, D)
+# heapq.heappush(queue, C)
+#
+# queue.remove(C)
+# heapq.heapify(queue)
+#
+#
+#
+# while queue:
+#     curt = heapq.heappop(queue)
+#     print curt.name
+#
+#

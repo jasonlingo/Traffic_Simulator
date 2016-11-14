@@ -5,18 +5,22 @@ import matplotlib.patches as patches
 from PIL import Image
 import threading
 import sys
+import time
 from DrawUtil import setRectangle
 from DrawUtil import GPS_DIST_UNIT
 from GoogleMap import getBackgroundMap
 from config import MAP_TYPE
 
+
 # multiple for the car's size
+CAR_LEN_MULTI = 16000
 CAR_LEN_MULTI = 16000
 
 # (r, g, b)
 colors = {"myYellow": (1, 1, 0.3),
           "calledTaxi": (1, 0, 1),
-          "majorRoad": (0/255, 1, 115/255)}
+          "majorRoad": (0/255, 1, 115/255),
+          "path": (0, 1, 1)}
 
 # def convertGeoUnit(lat, lng, latBase, lngBase, gpsW, gpsH, imageH, imageW):
 #     """
@@ -258,7 +262,6 @@ class AnimatedMap(threading.Thread):
                              newHead, self.flipCoord)
                 ax.add_patch(patch)
 
-
                 if car.isTaxi:
                     if car.called:
                         patch.set_color(colors["calledTaxi"])
@@ -269,6 +272,7 @@ class AnimatedMap(threading.Thread):
                         patch.set_color("r")
                     else:
                         patch.set_color("b")
+
 
             # cars = []
             # taxis = []
@@ -306,7 +310,6 @@ class AnimatedMap(threading.Thread):
         # interval: draws a new frame every interval milliseconds
         _ = animation.FuncAnimation(fig, animate, init_func=init, interval=30, blit=False)
         plt.show()
-
 
 # =====================================
 # For unit testing

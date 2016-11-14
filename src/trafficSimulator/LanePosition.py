@@ -55,7 +55,7 @@ class LanePosition(object):
         self.position = pos
 
     def addPosition(self, pos):
-        self.position = max(0, self.position + pos)
+        self.position = max(0, self.position + pos)  # no backward
         self.position = min(self.position, self.lane.getLength())
 
     def nextCarDistance(self):
@@ -89,12 +89,12 @@ class LanePosition(object):
 
     def acquire(self):
         """
-        Add this LanePosition to the current lane
+        Add this LanePosition to the current lane.
         """
         if self.lane:
             self.free = False
             self.lane.addCarPosition(self)
-            self.getRoad().addCarTime(self.car.id, Traffic.globalTime, self.relativePosition())
+            self.getRoad().addCarDriveTime(self.car.id, Traffic.globalTime, self.relativePosition())
 
     def release(self):
         """
@@ -103,10 +103,10 @@ class LanePosition(object):
         if not self.free and self.lane:
             self.free = True
             self.lane.removeCar(self)
-            self.getRoad().deleteCarTime(self.car.id, Traffic.globalTime)
+            self.getRoad().deleteCarDriveTime(self.car.id, Traffic.globalTime, self.relativePosition())
 
-    def updateCarTime(self):
-        self.getRoad().updateCarTime(self.car.id, self.relativePosition())
+    def updateCarDriveTime(self):
+        self.getRoad().updateCarDriveTime(self.car.id, self.relativePosition())
 
     def getNext(self):
         """

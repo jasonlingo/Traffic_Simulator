@@ -1,5 +1,4 @@
 import heapq
-import sys
 
 
 class Navigator(object):
@@ -26,6 +25,7 @@ class Navigator(object):
         heap = []
         times = {}    # key: intersection, value: time
         backPtr = {}  # key: intersection, value: intersection
+        routeWeights = {}
 
         sourceInter = source.getTarget()
 
@@ -34,32 +34,35 @@ class Navigator(object):
         else:
             targetInter = destination.getRoad().getSource()
 
+        begin = RouteWeight(0, sourceInter)
         times[sourceInter] = 0
-        heapq.heappush(heap, (0, sourceInter))
+        routeWeights[sourceInter] = begin
+        heapq.heappush(heap, begin)
 
         while heap:
-            time, currInter = heapq.heappop(heap)
-            time = float(time)
+            curt = heapq.heappop(heap)
 
-            if currInter == targetInter:
+            if curt.intersection == targetInter:
                 break
 
-            neighborData = self.realMap.neighborAndTime(currInter)
-            # neighborData = self.realMap.neighborAndDistance(currInter)
+            neighborData = self.realMap.neighborAndTime(curt.intersection)
             for t, nextInter in neighborData:
-                newTime = round(min(t + time, Navigator.MAX_TIME), 10)  # prevent key not found
+                newTime = min(t + curt.time, Navigator.MAX_TIME)
                 if nextInter in times:
-                    if newTime < float(times[nextInter]):
-                        key = (times[nextInter], nextInter)
-                        if key in heap:
-                            heap.remove(key)
-                        heapq.heappush(heap, (newTime, nextInter))
+                    if newTime < times[nextInter]:
+                        key = routeWeights[nextInter]
+                        if key not in heap:
+                            print "not found"
+                        key.time = newTime
+                        heapq.heapify(heap)
                         times[nextInter] = newTime
-                        backPtr[nextInter] = currInter
+                        backPtr[nextInter] = curt.intersection
                 else:
-                    backPtr[nextInter] = currInter
+                    backPtr[nextInter] = curt.intersection
                     times[nextInter] = newTime
-                    heapq.heappush(heap, (newTime, nextInter))
+                    nextRouteWeight = RouteWeight(newTime, nextInter)
+                    routeWeights[nextInter] = nextRouteWeight
+                    heapq.heappush(heap, nextRouteWeight)
 
         route = self.extractPath(targetInter, backPtr, car)
         if not destination.isIntersection():

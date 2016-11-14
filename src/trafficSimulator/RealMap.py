@@ -49,9 +49,9 @@ class RealMap(object):
         self.navigator = Navigator(self)  # navigator for cars
 
         # self.sinkSource = set()           # the places that can be both sink and source places for adding and deleting cars
-        self.sink = set()                 # the places that can only be sink places for deleting cars
-        self.source = set()               # the places that can only be source places for adding cars
-        self.majorRoadSinkSource = set()  # the sink places on major roads
+        self.sink = []                # the places that can only be sink places for deleting cars
+        self.source = []               # the places that can only be source places for adding cars
+        self.majorRoadSinkSource = []  # the sink places on major roads
 
         self.createMap()                  # create the map by connecting the intersection and roads
         self.majorRoads = []
@@ -72,7 +72,6 @@ class RealMap(object):
         self.reset = False                # indicate whether it is in the middle (reset) of experiments
         self.locDict = defaultdict(list)  # recode which car is on which lane
         self.aniMapPlotOK = False         # indicate the map has been plotted
-        # self.carRunsOk = False            # TODO: may not need this
         self.roadAvgSpeed = {}            # the cache for the average speed of each road
 
 
@@ -290,8 +289,8 @@ class RealMap(object):
         :return:
         """
         if not self.sink or not self.source:
-            self.sink = set()
-            self.source = set()
+            self.sink = []
+            self.source = []
             # self.sinkSource = set()
             self.assignSinkSourceOnIntersection()
             self.assignSinkSourceOnRoad()
@@ -307,19 +306,10 @@ class RealMap(object):
         to the random probabilities.
         """
         for inter in self.intersections.values():
-            point = SinkSource(inter)
             if len(inter.getInRoads()) == 1:
-                self.sink.add(point)
-                self.source.add(point)
-            # else:
-            #     rand = random.random()
-            #     if rand < SINK_PROB:
-            #         self.sink.add(point)
-            #     elif rand < SINK_PROB + SOURCE_PROB:
-            #         self.source.add(point)
-            #     elif rand < SINK_PROB + SOURCE_PROB + SINK_SOURCE_PROB:
-            #         self.sink.add(point)
-            #         self.source.add(point)
+                point = SinkSource(inter)
+                self.sink.append(point)
+                self.source.append(point)
 
     def assignSinkSourceOnRoad(self):
         """
@@ -348,8 +338,8 @@ class RealMap(object):
                         position = (ROAD_OFFSET_FOR_SINK_SOURCE_POINT +
                                    FixedRandom.random() * (1 - 2 * ROAD_OFFSET_FOR_SINK_SOURCE_POINT)) * road.getLength()
                         point = SinkSource(None, road, position)
-                        self.sink.add(point)
-                        self.source.add(point)
+                        self.sink.append(point)
+                        self.source.append(point)
                 else:
                     visited.add(nextInter.id)
                     queue.append(nextInter)
@@ -365,7 +355,7 @@ class RealMap(object):
                 addedSinkSourceNum = 0
                 while addedSinkSourceNum <= sinkSourceNum:
                     point = SinkSource(None, road, addedSinkSourceNum * MAJOR_ROAD_MIN_LEN)
-                    self.majorRoadSinkSource.add(point)
+                    self.majorRoadSinkSource.append(point)
                     addedSinkSourceNum += 1
 
     def randomLaneLocation(self, onMajorRoad=False):
@@ -387,7 +377,7 @@ class RealMap(object):
             if tmp.getSource() and tmp.getTarget():
                 road = tmp
         lane = FixedRandom.choice(road.getLanes())
-        position = FixedRandom.random() * lane.getLength()  # TODO: check no car at that position
+        position = FixedRandom.random() * lane.getLength()
         return lane, position
 
     def cleanTaxis(self):
@@ -427,12 +417,13 @@ class RealMap(object):
 
         while num:
             lane, position = self.randomLaneLocation(onMajorRoad)
-            car = carType(lane, position)
+            car = carType(self.navigator, lane, position)
             if self.checkOverlap(lane, position, car.length):
-                car.navigator = self.navigator
                 car.destination = sampleOne(self.sink)
                 carList[car.id] = car
                 num -= 1
+            else:
+                car.release()
 
     def addCarFromSource(self, posLambda):
         self.addCarFromGivenSource(self.source, posLambda)
@@ -459,18 +450,17 @@ class RealMap(object):
                     addCar = True
                     for car in lane.getCars():
                         if car.trajectory.getAbsolutePosition() < CAR_LENGTH:
-                            # print "front car is too close to the new car"
                             addCar = False
                             break
                     if addCar:
                         addedCar += 1
                         destination = sampleOne(self.sink)
-                        newCar = Car(lane, 0)
-                        newCar.navigator = self.navigator
+                        newCar = Car(self.navigator, lane, 0)
                         newCar.setDestination(destination)
                         self.cars[newCar.id] = newCar
-                        print "Add a new car: %s. [%d cars, %d taxis]" %\
-                            (newCar.id, len(self.cars), len(self.taxis))
+                        # TODO remove comment below
+                        # print "Add a new car: %s. [%d cars, %d taxis]" %\
+                        #     (newCar.id, len(self.cars), len(self.taxis))
                         if addedCar == numCar:
                             break
             else:
@@ -486,13 +476,13 @@ class RealMap(object):
                     if addCar:
                         addedCar += 1
                         destination = sampleOne(self.sink)
-                        newCar = Car(lane, pos)
-                        newCar.navigator = self.navigator
+                        newCar = Car(self.navigator, lane, pos)
                         newCar.setDestination(destination)
                         self.cars[newCar.id] = newCar
                         newCar.destination = sampleOne(self.sink)
-                        print "Add a new car: %s. [%d cars, %d taxis]" %\
-                              (newCar.id, len(self.cars), len(self.taxis))
+                        # TODO remove comment below
+                        # print "Add a new car: %s. [%d cars, %d taxis]" %\
+                        #       (newCar.id, len(self.cars), len(self.taxis))
                         if addedCar == numCar:
                             break
 
@@ -508,13 +498,13 @@ class RealMap(object):
             exit(0)
         road = self.roads[crashRoad]
         lane = road.getLanes()[0]
-        car = Car(lane, crashPos * road.getLength())
+        car = Car(self.navigator, lane, crashPos * road.getLength())
         if self.checkOverlap(lane, crashPos, car.length):
             car.destination = sampleOne(self.sink)
-            car.navigator = self.navigator
             self.cars[car.id] = car
             return car
         else:
+            car.release()
             return None
 
     def getRandomDestination(self):
@@ -559,11 +549,8 @@ class RealMap(object):
         """
         nbs = []
         for road in intersection.getOutRoads():
-            if road not in self.roadAvgSpeed:
-                self.roadAvgSpeed[road] = road.getCurAvgSpeed()
-            # since the time only be used for comparison, no need to convert it to second
-            # currently it is calculated by distance (km) / speed (km/hour) = hour
-            time = (road.getLength() / float(self.roadAvgSpeed[road])) if self.roadAvgSpeed[road] > 0 else Navigator.MAX_TIME
+            time = road.getAvgTrafficTime()
+            # time = road.getCurAvgSpeed()
             nbs.append((time, road.getTarget()))
         return nbs
 
@@ -675,10 +662,3 @@ class RealMap(object):
         # Open the map file on a web browser.
         url = "file://" + os.getcwd() + "/" + mapFilename
         webbrowser.open_new(url)
-
-
-# =========================================================
-# For checking correctness
-# =========================================================
-# rm = RealMap("/Users/Jason/GitHub/Research/QLearning/Data/Roads_All.dbf", 6000)
-# rm.plotMap()

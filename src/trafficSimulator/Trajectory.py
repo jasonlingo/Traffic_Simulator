@@ -31,9 +31,6 @@ class Trajectory(object):
         return self.current.isGoal()
 
     def getLane(self):
-        # if self.temp.lane:
-        #     return self.temp.lane
-        # else:
         return self.current.lane
 
     def getRoad(self):
@@ -48,20 +45,10 @@ class Trajectory(object):
                 return road
 
     def getAbsolutePosition(self):
-        # if self.temp.lane:
-        #     return self.temp.position
-        # else:
         return self.current.position
 
     def getRelativePosition(self):
         return self.getAbsolutePosition() / self.current.lane.getLength()
-
-    # def getDirection(self):
-    #     # if self.temp.lane:
-    #     #     return self.temp.lane.getDirection(self.getRelativePosition())
-    #     # else:
-    #     return self.current.lane.getDirection(self.getRelativePosition())
-    #     # return self.lane.getDirection(self.getRelativePosition())
 
     def getCoords(self):
         """
@@ -103,21 +90,6 @@ class Trajectory(object):
     def isValidTurn(self):
         if not self.car.nextLane:
             return False
-        # nextLane = self.car.nextLane
-        # sourceLane = self.current.lane
-        # if not nextLane:
-            # print "no road to enter"
-            # return False
-        # turnNumber = sourceLane.getTurnDirection(nextLane)
-        # if turnNumber == 3:
-        #     print "no U-turns are allowed"
-        #     return False
-        # if turnNumber == 0 and not sourceLane.isLeftmost:
-        #     print "no left turns from this lane"
-        #     return False
-        # if turnNumber == 2 and not sourceLane.isRightmost:
-        #     print "no right turns from this lane"
-        #     return False
         return True
 
     def canEnterIntersection(self):
@@ -163,52 +135,25 @@ class Trajectory(object):
             return
 
         self.current.position += distance
-        self.next.position += distance
-        self.current.updateCarTime()
+        self.current.updateCarDriveTime()
 
         if self.timeToMakeTurn() and self.canEnterIntersection() and self.isValidTurn():
             if self.car.alive:
-                self.startChangingLanes(self.car.popNextLane(), distance)
+                self.startChangingLanes(self.car.popNextLane())
             else:
                 # arrive the destination
                 self.release()
 
-        # if self.temp.lane:
-        #     tempRelativePosition = self.temp.position / self.temp.lane.length
-        # else:
-        #     tempRelativePosition = 0
-
-        gap = 2.0 * self.car.length
-        # if self.isChangingLanes and self.temp.position > gap and not self.current.free: #fixme
-        if self.isChangingLanes and not self.current.free:
-            self.current.release()
-
-        if self.isChangingLanes and self.next.free:#and self.temp.position + gap > (self.temp.lane.length if self.temp.lane else 0):
-            self.next.acquire()
-        if self.isChangingLanes:  # and tempRelativePosition >= 1:
+        # if self.isChangingLanes:
+        if self.isChangingLanes:
+            if not self.current.free:
+                self.current.release()
+            if self.next.free:
+                self.next.acquire()
             self.finishChangingLanes()
+
         if self.current.lane and not self.isChangingLanes and not self.car.nextLane:
             self.car.pickNextLane()
-
-    # def changeLane(self, nextLane):
-    #     print "%s is changing lane" % self.car.id
-    #     if self.isChangingLanes:
-    #         print "already changing lane"
-    #         return
-    #     if nextLane is None:
-    #         print "no next lane"
-    #         return
-    #     if nextLane == self.lane:
-    #         print "next lane == current lane"
-    #         return
-    #     if self.lane.road != nextLane.road:
-    #         print "not neighbouring lanes"
-    #         return
-    #     nextPosition = self.current.position + self.car.length
-    #     if nextPosition >= self.current.lane.getLength():
-    #         print "too late to change lane"
-    #         return
-    #     return self.startChangingLanes(nextLane, nextPosition)
 
     def switchLane(self, targetLane):
         """
@@ -216,7 +161,7 @@ class Trajectory(object):
         :param targetLane:
         """
         if self.isChangingLanes:
-            print "already changing lane"
+            print "is changing lane"
             return
         if targetLane is None:
             print "no target lane"
@@ -229,23 +174,7 @@ class Trajectory(object):
             self.current.lane = targetLane
             self.current.acquire()
 
-    # def getIntersectionLaneChangeCurve(self):
-    #     return
-
-    # def getAdjacentLaneChangeCurve(self):
-    #     p1 = self.current.lane.getPoint(self.current.relativePosition())
-    #     p2 = self.next.lane.getPoint(self.next.relativePosition())
-    #     distance = p2.subtract(p1).length
-    #     direction1 = self.current.lane.middleLine.vector.normalized.mult(distance * 0.3)
-    #     control1 = p1.add(direction1)
-    #     direction2 = self.next.lane.middleLine.vector.normalized.mult(distance * 0.3)
-    #     control2 = p2.subtract(direction2)
-    #     return Curve(p1, p2, control1, control2)
-
-    # def getCurve(self):
-    #     return self.getAdjacentLaneChangeCurve()
-
-    def startChangingLanes(self, nextLane, distance):
+    def startChangingLanes(self, nextLane):
         """
         Change to the nextLane.
         :param nextLane:
@@ -258,8 +187,6 @@ class Trajectory(object):
         self.isChangingLanes = True
         self.next.lane = nextLane
         nextLaneCar, nextLaneCarPosition = self.next.nextCarDistance()
-        # if nextLaneCar is None, then the
-        # nextLaneCarPosition = nextLaneCarPosition if nextLaneCar else self.next.lane.getLength()  # TODO: check if we still need this
         remainderDistance = max(self.current.position - self.current.lane.getLength(), 0)
         nextPosition = min(remainderDistance, nextLaneCarPosition)
         self.next.position = nextPosition
@@ -268,16 +195,12 @@ class Trajectory(object):
         if not self.isChangingLanes:
             print "no lane changing is going on"
         self.next.release()
-        # self.temp.release()
         self.isChangingLanes = False
         self.current.lane = self.next.lane
         self.current.position = self.next.position
         self.next.lane = None
         self.next.position = 0
-        # self.temp.lane = None
-        # self.temp.position = 0
         self.current.acquire()
-        # return self.current.lane
 
     def release(self):
         if self.current:

@@ -36,10 +36,8 @@ METER_TYPE = "KM"
 # GRID_SIZE = 32
 # DEFAULT_TIME_FACTOR = 5
 
-LIGHT_FLIP_INTERVAL = 10
-"""The time interval """
-
-# SHAPEFILE_NAME = "/Users/Jason/GitHub/Research/QLearning/Data/Roads_All.dbf"
+LIGHT_FLIP_INTERVAL = 20
+"""The time interval for the traffic light to change its signals"""
 
 MAX_SPEED = 60.0
 """The default speed limit for roads"""
@@ -65,8 +63,8 @@ CAR_WIDTH = 0.0018
 POI_LAMBDA = 0.00002
 """The lambda parameter for poisson arrival for a new car comes into the map"""
 
-UPDATE_ROUTE_TIME = 30  # second
-"""The time for updating navigation"""
+UPDATE_ROUTE_TIME = 30
+"""The time (seconds) for updating navigation"""
 
 MAJOR_ROAD_MIN_LEN = 0.2
 """The minimum length (in km) for a major roads. If a road is longer than this length, it is a major road."""

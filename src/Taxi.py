@@ -43,21 +43,12 @@ class Taxi:
             self.randomRouteX.append(pos[0])
             self.randomRouteY.append(pos[1])
 
-    def setAvailable(self, available):
-        """
-        :param available: True if the taxi is available; False otherwise
-        """
-        self.available = available
-
-    def isAvailable(self):
-        return self.available
-
     def isCalled(self):
         return self.called
 
     def beenCalled(self):
         self.called = True
-        self.setAvailable(True)
+        self.available = True
 
     def equals(self, taxi):
         return self.id == taxi.getId()
