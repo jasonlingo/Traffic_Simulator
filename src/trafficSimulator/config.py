@@ -75,3 +75,5 @@ MAJOR_ROAD_POI_LAMBDA = POI_LAMBDA * 3
 AVG_TIME_PERIOD = 300
 """Time period (in second) for calculating average drive time of a road"""
 
+PERCENTAGE_FOR_AVG_DRIVE_TIME = 0.4
+"""The percentage of"""

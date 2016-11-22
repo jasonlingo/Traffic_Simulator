@@ -4,7 +4,6 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import math
-from FixedRandom import FixedRandom
 from TrafficUtil import *
 from Trajectory import Trajectory
 from src.trafficSimulator.config import CAR_LENGTH, CAR_WIDTH, UPDATE_ROUTE_TIME
@@ -15,8 +14,6 @@ class Car(object):
     """
     A class that represents a car.
     """
-
-    SECOND_PER_HOUR = 3600.0
 
     def __init__(self, navigator, lane, position=0, maxSpeed=MAX_SPEED, carType="Car"):
         """
@@ -156,7 +153,7 @@ class Car(object):
         freeRoadCoeff = pow(speedRatio, 4)
 
         # calculate the busy road coefficient
-        timeGap = self.speed * TIME_HEAD_AWAY / Car.SECOND_PER_HOUR  # (km/h) * (second/3600) = km
+        timeGap = self.speed * TIME_HEAD_AWAY / Traffic.SECOND_PER_HOUR  # (km/h) * (second/3600) = km
         breakGap = self.speed * deltaSpeed / (2 * math.sqrt(MAX_ACCELERATION * MAX_DECELERATION))
         safeDistance = DIST_GAP + timeGap + breakGap
         if distanceToNextCar > 0:
@@ -200,7 +197,7 @@ class Car(object):
     def updateNavigation(self):
         if self.routeSetTime is None:
             self.getNavigation()
-        elif UPDATE_NAVIGATION and self.called:
+        elif UPDATE_NAVIGATION and self.isTaxi and Traffic.carIsCrashed:  #self.called:
             if Traffic.globalTime >= self.routeSetTime:
                 setRouteTimeDiff = Traffic.globalTime - self.routeSetTime
             else:
@@ -216,8 +213,8 @@ class Car(object):
 
     def calcMovingDist(self, second):
         acceleration = self.getAcceleration()
-        self.setSpeed(self.speed + acceleration * second * Car.SECOND_PER_HOUR)
-        step = max(self.speed * second / Car.SECOND_PER_HOUR + 0.5 * acceleration * math.pow(second, 2), 0)
+        self.setSpeed(self.speed + acceleration * second * Traffic.SECOND_PER_HOUR)
+        step = max(self.speed * second / Traffic.SECOND_PER_HOUR + 0.5 * acceleration * math.pow(second, 2), 0)
         _, nextCarDist = self.trajectory.nextCarDistance()
         nextCarDist = max(nextCarDist, 0)
         return min(nextCarDist, step)

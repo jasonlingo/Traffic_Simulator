@@ -550,7 +550,6 @@ class RealMap(object):
         nbs = []
         for road in intersection.getOutRoads():
             time = road.getAvgTrafficTime()
-            # time = road.getCurAvgSpeed()
             nbs.append((time, road.getTarget()))
         return nbs
 
@@ -581,7 +580,7 @@ class RealMap(object):
                 break
         curAvgSpd = road.getCurAvgSpeed()
         if curAvgSpd > 0:
-            return (road.getLength() / curAvgSpd) * 3600  # convert to second
+            return (road.getLength() / curAvgSpd) * Traffic.SECOND_PER_HOUR  # convert to second
         else:
             return sys.maxint
 
