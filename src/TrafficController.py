@@ -10,6 +10,7 @@ from trafficSimulator.SinkSource import SinkSource
 from trafficSimulator.TrafficUtil import Traffic
 from trafficSimulator.TrafficUtil import DistanceUnit
 from src.trafficSimulator.config import MAJOR_ROAD_POI_LAMBDA
+from trafficSimulator.Priority import PriorityItemQueue
 
 
 class TrafficController(object):
@@ -65,7 +66,15 @@ class TrafficController(object):
         # preTime = time.time()
         deltaTime = 0.3  # unit: second
 
+        preCarNum = len(self.cars)
+
         while not self.isCalledTaxiArrived or self.arrivedTaxiNum < self.numTopTaxi:
+            if abs(len(self.cars) - preCarNum) >= 10:
+                print "total number of cars:", len(self.cars)
+                preCarNum = len(self.cars)
+
+
+
             # clear the cached average speed of roads in the previous loop.
             self.env.realMap.clearRoadAvgSpeed()  # fixme: delete this
 
@@ -80,6 +89,7 @@ class TrafficController(object):
                     crashedCar = self.env.randomCarAccident()
 
                 if crashedCar:
+                    Traffic.carIsCrashed = True
                     # set the speed limit of the road where this crash happens and then
                     # call a taxi to the crash location
                     self.carCrashed = True
@@ -108,7 +118,7 @@ class TrafficController(object):
             # make traffic light change
             self.env.updateContralSignal(deltaTime)
 
-            time.sleep(0.2)
+            # time.sleep(0.2)
 
     def callTaxiForCrash(self, crashedCar):
         crashRoad = crashedCar.trajectory.getRoad()
@@ -200,32 +210,40 @@ class TrafficController(object):
         """
         print "Searching taxis =========================================="
 
-        fastTaxi = [sys.maxint, None]
+          # check if there is a taxi on the same road (behind the crashed car)
+        sameRoadTaxi = self.findSameRoadTaxi(loc)
+        if sameRoadTaxi is not None:
+            return sameRoadTaxi
 
-        # check if there is a taxi on the same road
+        # find the fastest taxi on other roads
+        quickestTaxi = self.findQuistestTaxi(loc)
+
+        print "=========================================================="
+        if quickestTaxi is None:
+            print "No taxi available!"
+        else:
+            return quickestTaxi
+
+    def findSameRoadTaxi(self, loc):
+        fastTaxi = [sys.maxint, None]
         for car in loc.road.getCars():
             if car.isTaxi and car.available:
                 if car.trajectory.current.position <= loc.position:
                     if not fastTaxi[1] or loc.position - car.trajectory.current.position < fastTaxi[0]:
                         fastTaxi[0] = loc.position - car.trajectory.current.position
                         fastTaxi[1] = car
-
         if fastTaxi[1]:
             return fastTaxi[1]
 
-        # there is no taxi on the same road as the crashed car did
-        # find the fastest taxi on other roads
-        frontier = []
+    def findQuistestTaxi(self, loc):
+        fastTaxi = [sys.maxint, None]
         roadTrafficTime = {}
-        intersectionTime = {}  # record visited intersections
+        frontier = PriorityItemQueue()
+        frontier.push(0, loc.road.getSource())
 
-        start = (0, loc.road.getSource())
-        intersectionTime[loc.road.getSource()] = start
-        heapq.heappush(frontier, start)
-
-        while frontier and frontier[0][0] < fastTaxi[0]:
-            curr = heapq.heappop(frontier)
-            for road in curr[1].getInRoads():
+        while frontier.size() > 0 and frontier.peek().priority < fastTaxi[0]:
+            curr = frontier.pop()
+            for road in curr.item.getInRoads():
                 if road in roadTrafficTime:
                     trafficTime = roadTrafficTime[road]
                 else:
@@ -234,7 +252,7 @@ class TrafficController(object):
 
                 for car in road.getCars():
                     if car.isTaxi and car.available:
-                        time = curr[0] + (1 - car.trajectory.current.position) * trafficTime
+                        time = curr.priority + (1 - car.trajectory.current.position) * trafficTime
                         if time < fastTaxi[0]:
                             print "found faster %s that can arrive the crash location in %f seconds" % (car.id, time)
                             fastTaxi = (time, car)
@@ -244,24 +262,14 @@ class TrafficController(object):
                 # update time to intersection if the time is quicker
                 # if the time is less than the previous calculated time, replace it
                 # otherwise, do nothing
-                time = curr[0] + trafficTime
+                time = curr.priority + trafficTime
                 inter = road.getSource()
-                next = (time, inter)
-                if inter in intersectionTime:
-                    if intersectionTime[inter][0] > time:
-                        if intersectionTime[inter] in frontier:
-                            frontier.remove(intersectionTime[inter])
-                        else:
-                            print "remove, not found"
-                        intersectionTime[inter] = next
-                        heapq.heappush(frontier, next)
+                itemPriority = frontier.getItemPriority(inter)
+                if itemPriority is not None:
+                    if itemPriority > time:  # update item priority
+                        frontier.removeItemFromQueue(inter)
+                        frontier.push(time, inter)
                 else:
-                    intersectionTime[inter] = next
-                    heapq.heappush(frontier, next)
+                    frontier.push(time, inter)
 
-        print "=========================================================="
-        if fastTaxi[1] is None:
-            print "No taxi available!"
-        else:
-            return fastTaxi[1]
-
+        return fastTaxi[1]

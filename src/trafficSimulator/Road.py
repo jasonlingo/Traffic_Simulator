@@ -6,6 +6,7 @@ import numpy as np
 from Lane import Lane
 from TrafficUtil import Traffic, RoadType, calcVectAngle, haversine
 from src.trafficSimulator.config import MAX_ROAD_LANE_NUM
+from src.trafficSimulator.config import PERCENTAGE_FOR_AVG_DRIVE_TIME
 from config import MAJOR_ROAD_MIN_LEN
 from config import AVG_TIME_PERIOD
 
@@ -78,7 +79,14 @@ class Road(object):
         return cars
 
     def getAvgTrafficTime(self):
-        return self.roadSpeed.getAvgDriveTime(Traffic.globalTime)
+        avgDriveTime = self.roadSpeed.getAvgDriveTime(Traffic.globalTime)
+        return avgDriveTime
+        # curDriveSpeed = self.getCurAvgSpeed()
+        # if curDriveSpeed == 0:
+        #     curDriveTime = avgDriveTime
+        # else:
+        #     curDriveTime = (self.getLength() / self.getCurAvgSpeed()) * Traffic.SECOND_PER_HOUR
+        # return PERCENTAGE_FOR_AVG_DRIVE_TIME*avgDriveTime + (1 - PERCENTAGE_FOR_AVG_DRIVE_TIME)*curDriveTime
 
     def getCurAvgSpeed(self):
         """
@@ -91,8 +99,10 @@ class Road(object):
         #     carPosition.extend(lane.carsPosition.values())
         # cars = [cp.car for cp in carPosition if cp.car is not None]
         cars = self.getCars()
-        avgSpeed = sum([car.speed for car in cars]) / len(cars) if len(cars) > 0 else self.speedLimit
-        return avgSpeed
+        if len(cars) > 0:
+            return min(self.speedLimit, sum([car.speed for car in cars]) / len(cars))
+        else:
+            return self.speedLimit
 
     def getSpeedLimit(self):
         return self.speedLimit
@@ -255,7 +265,7 @@ class RoadSpeed(object):
         :param curtTime:
         :param pos: (float) relative position
         """
-        driveTime = DriveTime(curtTime, pos)
+        driveTime = DriveTime(curtTime, pos, carId)
         self.driveTimes.append(driveTime)
         self.cars[carId] = driveTime
 
@@ -301,10 +311,12 @@ class RoadSpeed(object):
 
         times = [x.getTrafficTime(curtTime) for x in self.driveTimes]
         times = [x for x in times if x is not None]
+        minTrafficTime = (self.road.getLength() / self.road.speedLimit) * Traffic.SECOND_PER_HOUR
         if times:
-            return sum(times) / len(times)
+            avgTime = sum(times) / len(times)
+            return max(avgTime, minTrafficTime)
         else:
-            return (self.road.getLength() / self.road.speedLimit) * 3600
+            return minTrafficTime
 
     def setCrash(self, carId):
         driveTime = self.cars[carId]
@@ -315,11 +327,12 @@ class RoadSpeed(object):
 
 class DriveTime(object):
 
-    def __init__(self, startTime, pos):
+    def __init__(self, startTime, pos, carId):
         """
         :param startTime: (int) the timestamp when the car is entering the road
         :param pos: (float) relative position (0~1)
         """
+        self.carId = carId
         self.startTime = startTime
         self.endTime = None
         self.startingPos = pos
@@ -330,7 +343,7 @@ class DriveTime(object):
     def getTrafficTime(self, curtTime):
         """
         :param curtTime:
-        :return:
+        :return: traffic time in second
         """
         if self.endTime:
             if self.endPos == self.startingPos:
@@ -338,14 +351,15 @@ class DriveTime(object):
             return (self.endTime - self.startTime) / (self.endPos - self.startingPos)
 
         posDiff = self.curtPos - self.startingPos
-        if posDiff == 0:
-            return None
-            # if end == self.startTime:  # just enter this road, don't count this
-            #     return None
-            # else:
-            #     pos = (1 - self.startingPos) * 0.1  # multiply the time by 10
-
         if self.startTime <= curtTime:
-            return (curtTime - self.startTime) / posDiff
+            timeDiff = curtTime - self.startTime
         else:
-            return (Traffic.globalTimeLimit - (self.startTime - curtTime)) / posDiff
+            timeDiff = Traffic.globalTimeLimit - (self.startTime - curtTime)
+
+        if posDiff == 0:
+            if timeDiff == 0:  # just enter this road, don't count this
+                return None
+            else:
+                posDiff = min(0.5, max(0.1, 1 / timeDiff))  # posDiff: 0.1~0.5
+
+        return timeDiff / posDiff

@@ -12,6 +12,10 @@ class Traffic(object):
     globalTime = 0.0
     globalTimeLimit = sys.float_info.max
 
+    SECOND_PER_HOUR = 3600.0
+
+    carIsCrashed = False
+
     uniqueid = defaultdict(int)
 
     @classmethod

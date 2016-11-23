@@ -14,7 +14,6 @@ from config import MAP_TYPE
 
 # multiple for the car's size
 CAR_LEN_MULTI = 16000
-CAR_LEN_MULTI = 16000
 
 # (r, g, b)
 colors = {"myYellow": (1, 1, 0.3),

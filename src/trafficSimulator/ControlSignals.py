@@ -12,8 +12,8 @@ class ControlSignals(object):
         self.intersection = intersection
         self.time = 0
         self.id = Traffic.uniqueId("ControlSignal")
-        self.flipMultiplier = 2 + FixedRandom.random() * 0.4 - 0.2
-        self.flipInterval = self.flipMultiplier * LIGHT_FLIP_INTERVAL
+        self.flipMultiplier = 1 + FixedRandom.random()
+        self.flipInterval = self.flipMultiplier * LIGHT_FLIP_INTERVAL  # 1.8~2.2
         self.stateNum = 0
         self.states = None
         self.inRoads = []
