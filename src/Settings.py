@@ -36,7 +36,7 @@ NUM_TOP_TAXIS_TO_CRASH = 10
 TIME_FOR_ACCIDENT = 300
 """The time (in seconds) that a car crashes"""
 
-RANDOM_SEED = 113
+RANDOM_SEED = 47
 """The seed for the FixedRandom"""
 
 UPDATE_NAVIGATION = True

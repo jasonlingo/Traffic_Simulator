@@ -80,13 +80,13 @@ class Road(object):
 
     def getAvgTrafficTime(self):
         avgDriveTime = self.roadSpeed.getAvgDriveTime(Traffic.globalTime)
-        # return avgDriveTime
-        curDriveSpeed = self.getCurAvgSpeed()
-        if curDriveSpeed == 0:
-            curDriveTime = avgDriveTime
-        else:
-            curDriveTime = (self.getLength() / self.getCurAvgSpeed()) * Traffic.SECOND_PER_HOUR
-        return PERCENTAGE_FOR_AVG_DRIVE_TIME*avgDriveTime + (1 - PERCENTAGE_FOR_AVG_DRIVE_TIME)*curDriveTime
+        return avgDriveTime
+        # curDriveSpeed = self.getCurAvgSpeed()
+        # if curDriveSpeed == 0:
+        #     curDriveTime = avgDriveTime
+        # else:
+        #     curDriveTime = (self.getLength() / self.getCurAvgSpeed()) * Traffic.SECOND_PER_HOUR
+        # return PERCENTAGE_FOR_AVG_DRIVE_TIME*avgDriveTime + (1 - PERCENTAGE_FOR_AVG_DRIVE_TIME)*curDriveTime
 
     def getCurAvgSpeed(self):
         """
@@ -315,7 +315,6 @@ class RoadSpeed(object):
         if times:
             avgTime = sum(times) / len(times)
             return max(avgTime, minTrafficTime)
-            # return sum(times) / len(times)
         else:
             return minTrafficTime
 

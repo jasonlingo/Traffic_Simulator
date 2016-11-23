@@ -36,7 +36,7 @@ METER_TYPE = "KM"
 # GRID_SIZE = 32
 # DEFAULT_TIME_FACTOR = 5
 
-LIGHT_FLIP_INTERVAL = 20
+LIGHT_FLIP_INTERVAL = 15
 """The time interval for the traffic light to change its signals"""
 
 MAX_SPEED = 60.0
@@ -63,7 +63,7 @@ CAR_WIDTH = 0.0018
 POI_LAMBDA = 0.00002
 """The lambda parameter for poisson arrival for a new car comes into the map"""
 
-UPDATE_ROUTE_TIME = 30
+UPDATE_ROUTE_TIME = 47
 """The time (seconds) for updating navigation"""
 
 MAJOR_ROAD_MIN_LEN = 0.2
