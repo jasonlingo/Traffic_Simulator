@@ -1,5 +1,6 @@
-from TrafficUtil import *
-from ControlSignals import ControlSignals
+from trafficUtil import Traffic
+from trafficUtil import RoadType
+from controlSignals import ControlSignals
 
 
 class Intersection(object):
@@ -31,11 +32,6 @@ class Intersection(object):
         for ird in self.inRoads:
             result.append(ird.update())
         return result
-
-    # def isSinkInter(self):
-    #     if self.isSink is None:
-    #         self.isSink = len(self.outRoads) == 1
-    #     return self.isSink
 
     def getId(self):
         return self.id

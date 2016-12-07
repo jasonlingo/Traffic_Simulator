@@ -1,54 +1,18 @@
 from __future__ import division
+
+import threading
+import sys
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.patches as patches
 from PIL import Image
-import threading
-import sys
-import time
-from DrawUtil import setRectangle
-from DrawUtil import GPS_DIST_UNIT
+
+from config import CAR_LEN_MULTI
+from config import MAP_COLOR
+from drawUtil import setRectangle
+from drawUtil import GPS_DIST_UNIT
 from GoogleMap import getBackgroundMap
 from config import MAP_TYPE
-
-
-# multiple for the car's size
-CAR_LEN_MULTI = 16000
-
-# (r, g, b)
-colors = {"myYellow": (1, 1, 0.3),
-          "calledTaxi": (1, 0, 1),
-          "majorRoad": (0/255, 1, 115/255),
-          "path": (0, 1, 1)}
-
-# def convertGeoUnit(lat, lng, latBase, lngBase, gpsW, gpsH, imageH, imageW):
-#     """
-#     Convert geo-coding (lat, lng) to the pixel unit of the base image by
-#     computing the ratio of the point to the entire map.
-#     The origin for the coordinate system of picture is at the top-left,
-#     and bottom-left for the geo-coordinate system (north-west hemisphere).
-#     T
-#                       north (0~90)
-#                          |
-#                          |
-#      (0~-180) west-------|-------east (0~180)
-#                          |
-#                          |
-#                       south (0~-90)
-#
-#     :param lat: (float) original latitude
-#     :param lng: (float) original longitude
-#     :param latBase: (float) the base of the latitude
-#     :param lngBase: (float) the base of the longitude
-#     :param gpsW: (float) the width of the gps system
-#     :param gpsH: (float) the height of the gps system
-#     :param imageW: (float) the width of the background image.
-#     :param imageH: (float) the height of the background image.
-#     :return: the (x, y) position.
-#     """
-#     heightPos = (lat - latBase) / gpsH * imageH
-#     widthPos  = (lng - lngBase) / gpsW * imageW
-#     return heightPos, widthPos
 
 
 class AnimatedMap(threading.Thread):
@@ -68,9 +32,7 @@ class AnimatedMap(threading.Thread):
         self.intersections = realMap.getIntersections()
         self.cars = self.realMap.getCars()
         self.taxis = self.realMap.getTaxis()
-        # store the patch (shape) object for cars and taxis
-        self.carPatch = {}
-
+        self.carPatch = {}  # store the patch (shape) object for cars and taxis
         self.cnt = 0
         self.printCrashCar = False
         self.maxLat = -sys.maxint
@@ -167,7 +129,7 @@ class AnimatedMap(threading.Thread):
             for i in range(len(allLngs)):
                 plt.plot(allLngs[i], allLats[i], color='w', alpha=0.7)
             for i in range(len(majorRoadLngs)):
-                plt.plot(majorRoadLngs[i], majorRoadLats[i], color=colors["majorRoad"], alpha=0.7)
+                plt.plot(majorRoadLngs[i], majorRoadLats[i], color=MAP_COLOR["majorRoad"], alpha=0.7)
 
             # create rectangle patches for cars and taxis
             for car in self.cars.values() + self.taxis.values():
@@ -182,32 +144,8 @@ class AnimatedMap(threading.Thread):
             self.leftLaneCarPoints,  = ax.plot([], [], 'ro', ms=4, zorder=1)
 
             # plot taxis
-            self.taxiPoints, = ax.plot([], [], color=colors["myYellow"], ms=4, zorder=1)
-            self.calledTaxiPoints, = ax.plot([], [], color=colors["myYellow"], ms=4, zorder=1)
-
-            # plot goal location
-            # goalLng, goalLat = self.realMap.getGoalPosition()
-            # self.goalPoint, = ax.plot([goalLng], [goalLat], 'r*', ms=9)
-
-            # ===============================================
-            # plot sink and source points
-            # ===============================================
-            # sinkLng = []
-            # sinkLat = []
-            # sourceLng = []
-            # sourceLat = []
-            # for p in self.realMap.getSink():
-            #     lng, lat = p.getCoords()
-            #     sinkLng.append(lng)
-            #     sinkLat.append(lat)
-            # self.sinkPoint, = ax.plot(sinkLng, sinkLat, 'md', ms=2)
-            #
-            # for p in self.realMap.getSource():
-            #     lng, lat = p.getCoords()
-            #     sourceLng.append(lng)
-            #     sourceLat.append(lat)
-            # self.sourcePoint, = ax.plot(sourceLng, sourceLat, 'kD', ms=2)
-
+            self.taxiPoints, = ax.plot([], [], color=MAP_COLOR["myYellow"], ms=4, zorder=1)
+            self.calledTaxiPoints, = ax.plot([], [], color=MAP_COLOR["myYellow"], ms=4, zorder=1)
 
             # Notify other thread that the initialization has finished
             print "Animated map initialization finished"
@@ -263,48 +201,14 @@ class AnimatedMap(threading.Thread):
 
                 if car.isTaxi:
                     if car.called:
-                        patch.set_color(colors["calledTaxi"])
+                        patch.set_color(MAP_COLOR["calledTaxi"])
                     else:
-                        patch.set_color(colors["myYellow"])
+                        patch.set_color(MAP_COLOR["myYellow"])
                 else:
                     if car.isOnRightLane():
                         patch.set_color("r")
                     else:
                         patch.set_color("b")
-
-
-            # cars = []
-            # taxis = []
-            # if self.realMap.checkReset():
-            #     self.carPoints.set_data([], [])
-            #     self.taxiPoints.set_data([], [])
-            #     self.calledTaxiPoints.set_data([], [])
-            #     self.changedSignals.set_data([], [])
-            # else:
-            #     cars = self.realMap.getCars().values()
-            #     taxis = self.realMap.getTaxis().values()
-            #
-            # rightLaneCarLng = []
-            # rightLaneCarLat = []
-            # leftLaneCarLng  = []
-            # leftLaneCarLat  = []
-            # for car in cars:
-            #     coords = car.getCoords()
-            #     if car.isOnRightLane():
-            #         rightLaneCarLng.append(coords[0])
-            #         rightLaneCarLat.append(coords[1])
-            #     else:
-            #         leftLaneCarLng.append(coords[0])
-            #         leftLaneCarLat.append(coords[1])
-            #
-            # self.rightLaneCarPoints.set_data(rightLaneCarLng, rightLaneCarLat)
-            # self.leftLaneCarPoints.set_data(leftLaneCarLng, leftLaneCarLat)
-            #
-            # self.calledTaxiPoints.set_data([taxi.getCoords()[0] for taxi in taxis if taxi.called],
-            #                                [taxi.getCoords()[1] for taxi in taxis if taxi.called])
-            # self.taxiPoints.set_data([taxi.getCoords()[0] for taxi in taxis if not taxi.called],
-            #                          [taxi.getCoords()[1] for taxi in taxis if not taxi.called])
-
 
         # interval: draws a new frame every interval milliseconds
         _ = animation.FuncAnimation(fig, animate, init_func=init, interval=30, blit=False)

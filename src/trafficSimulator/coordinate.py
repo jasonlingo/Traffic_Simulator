@@ -1,6 +1,5 @@
 
 
-
 class Coordinate(object):
     """
     A class that represent the coordinates of a point.

@@ -23,10 +23,6 @@ def dijkstraSearch(graph, start, goals):
 
     while not frontier.empty():
         current = frontier.get()
-        # if costSoFar[current] > shortestTime:
-        #     break
-
-        # if current == goal:
         source = cameFrom[current]
         if source and current:
             roads = graph.getRoadsBetweenIntersections(source, current)
@@ -82,11 +78,3 @@ def dijkstraTrafficTime(graph, start, goals):
 
     return sys.maxint
 
-def dijkstraRoute(graph, source, destination):
-    """
-    Use Dijkstra to find a shortest path in a weighted (traffic time) graph.
-    :param graph: (RealMap)
-    :param source: (SinkSource)
-    :param destination: (SinkSource)
-    :return: a list of path
-    """

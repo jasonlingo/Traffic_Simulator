@@ -4,27 +4,25 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import pygmaps
 import webbrowser
-import numpy
 import time
-from Shapefile import Shapefile
-from Road import Road
-from Car import *
-from src.Dijkstra import *
-from SinkSource import SinkSource
-from FixedRandom import FixedRandom
-from Navigation import Navigator
+from collections import defaultdict
+from shapefileParser import Shapefile
+
+from road import Road
+from car import Car
+from car import Taxi
+from trafficUtil import Traffic
+from trafficUtil import CarType
+from trafficUtil import sampleOne
+from trajectory import Trajectory
+from sinkSource import SinkSource
+from fixedRandom import FixedRandom
+from navigation import Navigator
 from config import MAJOR_ROAD_MIN_LEN
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-
-# probabilities for edge intersections to be a sink or source places
-SINK_PROB = 0.15
-SOURCE_PROB = 0.15
-SINK_SOURCE_PROB = 0.2
-
-# minimal road length (km) for a sink or source point
-MIN_SINK_SOURCE_ROAD_LENGTH = 0.2
-ROAD_OFFSET_FOR_SINK_SOURCE_POINT = 0.1
+from config import CAR_LENGTH
+from config import MIN_SINK_SOURCE_ROAD_LENGTH
+from config import ROAD_OFFSET_FOR_SINK_SOURCE_POINT
+from src.Dijkstra import dijkstraTrafficTime
 
 
 class RealMap(object):
@@ -443,9 +441,6 @@ class RealMap(object):
                         newCar = Car(self.navigator, lane, 0)
                         newCar.setDestination(destination)
                         self.cars[newCar.id] = newCar
-                        # TODO remove comment below
-                        # print "Add a new car: %s. [%d cars, %d taxis]" %\
-                        #     (newCar.id, len(self.cars), len(self.taxis))
                         if addedCar == numCar:
                             break
             else:

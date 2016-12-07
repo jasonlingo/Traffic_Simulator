@@ -1,9 +1,10 @@
+import sys
 import math
 import numpy as np
 
-from FixedRandom import FixedRandom
-from TrafficUtil import Traffic
-from src.trafficSimulator.config import *
+from fixedRandom import FixedRandom
+from trafficUtil import Traffic
+from config import LIGHT_FLIP_INTERVAL
 
 
 class ControlSignals(object):
@@ -13,7 +14,7 @@ class ControlSignals(object):
         self.time = 0
         self.id = Traffic.uniqueId("ControlSignal")
         self.flipMultiplier = 1 + FixedRandom.random()
-        self.flipInterval = self.flipMultiplier * LIGHT_FLIP_INTERVAL  # 1~2 * LIGHT_FLIP_INTERVAL
+        self.flipInterval = self.flipMultiplier * LIGHT_FLIP_INTERVAL  # (1~2) * LIGHT_FLIP_INTERVAL
         self.stateNum = 0
         self.states = None
         self.inRoads = []
@@ -141,22 +142,7 @@ class ControlSignals(object):
 
         return -1
 
-    # def getFlipInterval(self):
-    #     return self.flipMultiplier * LIGHT_FLIP_INTERVAL
-
-    # def getState(self):
-    #     if not self.states:
-    #         self.generateState()
-    #
-    #     # if len(self.intersection.roads) <= 2:
-    #     #     stringState = ['LFR', 'LFR', 'LFR', 'LFR']
-    #     # else:
-    #     #     # stringState = self.states[self.stateNum % len(self.states)]
-    #     #     stringState = self.states[self.stateNum]
-    #     # return [self.decode(x) for x in stringState]
-
     def decode(self, s):
-        state = [0, 0, 0]
         state = [0 for _ in range(len(self.inRoads) - 1)]
         if s.index('L') >= 0:
             state[0] = 1
@@ -186,11 +172,7 @@ class ControlSignals(object):
         permitEnter = self.states[self.stateNum][sourceNum]
         if not permitEnter:
             return False
-        # endNum = (sourceNum + self.pairNum) % (2 * self.pairNum)
-        # if endNum > sourceNum:
-        #     RFTurn = [n for n in range(sourceNum, endNum+1)]
-        # else:
-        #     RFTurn = [n for n in range(sourceNum, len(self.inRoads))] + [n for n in range(endNum)]
+
         RFTurn = []
         for i in range(1, self.pairNum+1):
             RFTurn.append((sourceNum + i) % len(self.inRoads))
@@ -200,12 +182,10 @@ class ControlSignals(object):
             return nextNum not in RFTurn
 
     def flip(self):
-        # print "signal changes from", self.states[self.stateNum], "to",
         if not self.states:
             self.generateState()
 
         self.stateNum = (self.stateNum + 1) % len(self.states)
-        # print self.states[self.stateNum]
 
     def updateSignal(self, delta):
         """
@@ -217,4 +197,3 @@ class ControlSignals(object):
             self.flip()
             self.time = 0
             return True
-

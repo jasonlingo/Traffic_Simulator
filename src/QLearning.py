@@ -1,5 +1,5 @@
 from collections import Counter
-from FixedRandom import FixedRandom
+from trafficSimulator.fixedRandom import FixedRandom
 
 
 class QLearning(object):
@@ -69,7 +69,7 @@ class QLearning(object):
         """
         Args:
             state1: (road)
-            action1 (Road): action taken in state1
+            action1 (road): action taken in state1
             reward: (float) reward received after taking action at state1
             state2: (road)
         Returns:

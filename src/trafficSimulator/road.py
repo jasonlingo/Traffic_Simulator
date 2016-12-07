@@ -3,10 +3,13 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import numpy as np
-from Lane import Lane
-from TrafficUtil import Traffic, RoadType, calcVectAngle, haversine
-from src.trafficSimulator.config import MAX_ROAD_LANE_NUM
-from src.trafficSimulator.config import PERCENTAGE_FOR_AVG_DRIVE_TIME
+
+from lane import Lane
+from trafficUtil import Traffic
+from trafficUtil import RoadType
+from drawUtil import calcVectAngle
+from drawUtil import haversine
+from config import MAX_ROAD_LANE_NUM
 from config import MAJOR_ROAD_MIN_LEN
 from config import AVG_TIME_PERIOD
 

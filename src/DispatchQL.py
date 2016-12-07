@@ -1,6 +1,7 @@
 from QLearning import QLearning
-from FixedRandom import FixedRandom
-from Settings import CHECK_INTERVAL
+from settings import CHECK_INTERVAL
+from trafficSimulator.fixedRandom import FixedRandom
+
 
 class DispatchQL(QLearning):
     """
@@ -115,7 +116,7 @@ class DispatchQL(QLearning):
         """
         Args:
             state1: (road)
-            action1 (Road): action taken in state1
+            action1 (road): action taken in state1
             reward: (float) reward received after taking action at state1
             state2: (road)
         """

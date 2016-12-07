@@ -2,7 +2,7 @@ from __future__ import division
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from TrafficUtil import *
+from trafficUtil import Traffic
 
 
 class LanePosition(object):
@@ -78,12 +78,6 @@ class LanePosition(object):
             if frontPosition <= rearPosition < nextRearPos:
                 nextCar = nextLanePosition.car
                 nextRearPos = rearPosition
-        # for lanePosition in nextLanePosition:
-        #     # if lanePosition.isGoal() and not self.car.isTaxi: # FIXME: check if still need this
-        #     #     continue
-        #     rearPosition = lanePosition.position - (lanePosition.car.length / 2.0 if lanePosition.car else 0)
-        #     if frontPosition <= rearPosition < nextRearPos:
-        #         nextRearPos = rearPosition
 
         return nextCar, nextRearPos - frontPosition
 

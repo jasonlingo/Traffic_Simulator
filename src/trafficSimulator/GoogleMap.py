@@ -3,6 +3,7 @@ import os
 import requests
 from time import sleep
 from PIL import Image
+
 from src.trafficSimulator.config import GOOGLE_STATIC_MAP_API_ADDRESS
 from src.trafficSimulator.config import GOOGLE_STATIC_MAP_KEY
 from src.trafficSimulator.config import MAP_FOLDER, BG_MAP_NAME
@@ -131,26 +132,26 @@ def getGoogleStaticMap(parameters, filename):
     sleep(0.1)
 
 
-# for testing
-# center = (39.327503, -76.617698)
-# filename = getBackgroundMap(center, 4, 6)
-# img = plt.imread(filename)
-# plt.imshow(img)
-# plt.show()
-
-
-"""
-top, bot, left, right
-38.9150644378 38.881276216 -77.057412562 -76.9936787843
-"""
-topLeft = (38.9150644378, -77.057412562)
-topRight = (38.9150644378, -76.9936787843)
-botLeft = (38.881276216, -77.057412562)
-botRight = (38.881276216, -76.9936787843)
-centers = [topLeft, topRight, botLeft, botRight]
-
-filename = ["pic/topLeft.png", "pic/topRight.png", "pic/botLeft.png", "pic/botRight.png"]
-hwRatio = 2/3
-# for i in range(4):
-#     param = genGoogleMapAPIParameter(centers[i][0], centers[i][1], hwRatio)
-#     getGoogleStaticMap(param, filename[i])
+# # for testing
+# # center = (39.327503, -76.617698)
+# # filename = getBackgroundMap(center, 4, 6)
+# # img = plt.imread(filename)
+# # plt.imshow(img)
+# # plt.show()
+#
+#
+# """
+# top, bot, left, right
+# 38.9150644378 38.881276216 -77.057412562 -76.9936787843
+# """
+# topLeft = (38.9150644378, -77.057412562)
+# topRight = (38.9150644378, -76.9936787843)
+# botLeft = (38.881276216, -77.057412562)
+# botRight = (38.881276216, -76.9936787843)
+# centers = [topLeft, topRight, botLeft, botRight]
+#
+# filename = ["pic/topLeft.png", "pic/topRight.png", "pic/botLeft.png", "pic/botRight.png"]
+# hwRatio = 2/3
+# # for i in range(4):
+# #     param = genGoogleMapAPIParameter(centers[i][0], centers[i][1], hwRatio)
+# #     getGoogleStaticMap(param, filename[i])
