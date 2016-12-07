@@ -20,7 +20,7 @@ class LanePosition(object):
         self.lane = lane
         self.position = position
         self.id = Traffic.uniqueId("lanePosition")
-        self.free = True
+        self.free = True  # True: this LanePosition is released; False: this LanePosition has been added to a lane
         self.isGoalFlag = False
 
     def setGoal(self):

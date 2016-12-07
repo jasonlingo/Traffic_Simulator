@@ -13,7 +13,7 @@ class ControlSignals(object):
         self.time = 0
         self.id = Traffic.uniqueId("ControlSignal")
         self.flipMultiplier = 1 + FixedRandom.random()
-        self.flipInterval = self.flipMultiplier * LIGHT_FLIP_INTERVAL  # 1.8~2.2
+        self.flipInterval = self.flipMultiplier * LIGHT_FLIP_INTERVAL  # 1~2 * LIGHT_FLIP_INTERVAL
         self.stateNum = 0
         self.states = None
         self.inRoads = []

@@ -63,7 +63,7 @@ CAR_WIDTH = 0.0018
 POI_LAMBDA = 0.00002
 """The lambda parameter for poisson arrival for a new car comes into the map"""
 
-UPDATE_ROUTE_TIME = 47
+UPDATE_ROUTE_TIME = 30
 """The time (seconds) for updating navigation"""
 
 MAJOR_ROAD_MIN_LEN = 0.2

@@ -197,7 +197,7 @@ class Car(object):
     def updateNavigation(self):
         if self.routeSetTime is None:
             self.getNavigation()
-        elif UPDATE_NAVIGATION and self.isTaxi and Traffic.carIsCrashed:  #self.called:
+        elif UPDATE_NAVIGATION and self.isTaxi and Traffic.carIsCrashed and self.called:
             if Traffic.globalTime >= self.routeSetTime:
                 setRouteTimeDiff = Traffic.globalTime - self.routeSetTime
             else:
@@ -221,6 +221,9 @@ class Car(object):
 
     def makeTurn(self, step):
         if self.trajectory.timeToMakeTurn(step):
+            if self.isTaxi and UPDATE_NAVIGATION and Traffic.carIsCrashed:
+                self.getNavigation()
+                self.nextLane = None
             if self.nextLane is None:
                 self.pickNextLane()
 
@@ -235,8 +238,6 @@ class Car(object):
         If the car is going to turn right, then choose the right-most lane
         :return: Lane object
         """
-        # if this car is going to turn right, it must be on the right-most lane #TODO
-
         # current lane only has this car, no need to switch lane.
         if len(self.trajectory.getLane().carsPosition) == 1:
             return self.trajectory.getLane()
