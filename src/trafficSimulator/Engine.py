@@ -57,3 +57,5 @@ class Engine(object):
 
         coeff = 1 - freeRoadCoeff - busyRoadCoeff - intersectionCoeff
         return round(MAX_ACCELERATION * coeff, 10)
+
+    
