@@ -77,3 +77,24 @@ AVG_TIME_PERIOD = 300
 
 PERCENTAGE_FOR_AVG_DRIVE_TIME = 0.4
 """The percentage of"""
+
+# probabilities for edge intersections to be a sink or source places
+SINK_PROB = 0.15
+SOURCE_PROB = 0.15
+SINK_SOURCE_PROB = 0.2
+
+# minimal road length (km) for a sink or source point
+MIN_SINK_SOURCE_ROAD_LENGTH = 0.2
+ROAD_OFFSET_FOR_SINK_SOURCE_POINT = 0.1
+
+# ============================================================================
+# Animation MAP Configuration
+# ============================================================================
+# multiple for the car's size
+CAR_LEN_MULTI = 16000
+
+# (r, g, b)
+MAP_COLOR = {"myYellow": (1, 1, 0.3),
+          "calledTaxi": (1, 0, 1),
+          "majorRoad": (0/255, 1, 115/255),
+          "path": (0, 1, 1)}

@@ -1,6 +1,6 @@
 import random
 import numpy as np
-from Settings import RANDOM_SEED
+from src.settings import RANDOM_SEED
 
 
 class FixedRandom(object):

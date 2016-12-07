@@ -1,14 +1,15 @@
 import os
 import sys
-
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
 import math
+
 from QLearning import QLearning
-from Dijkstra import dijkstraSearch, dijkstraTrafficTime
+from Dijkstra import dijkstraSearch
+from Dijkstra import dijkstraTrafficTime
 from DispatchQL import DispatchQL
-from Settings import MIN_EPSILON
-from src.trafficSimulator.config import MAX_SPEED
+from settings import MIN_EPSILON
+from trafficSimulator.config import MAX_SPEED
+
 
 class Experiment(object):
     """
@@ -67,7 +68,7 @@ class Experiment(object):
         """
         self.initialization()
         self.iteration += 1
-        interval = 1         # second
+        interval = 1  # second
 
         while not self.env.isGoalReached():
             self.showProgress()
@@ -205,15 +206,6 @@ class Experiment(object):
         if key not in self.epsilonDict:
             self.epsilonDict[key] = max(MIN_EPSILON, self.epsilon * math.pow(0.9999, iteration))
         return self.epsilonDict[key]
-
-    # def addCarTaxi(self):
-    #     """
-    #     Generate taxis with random initial locations
-    #     :param taxiNum: the total number of taxis to be generated
-    #     :return: the list of generated taxis
-    #     """
-    #     self.env.addRandomCars(self.carNum)
-    #     self.env.addRandomTaxis(self.taxiNum)
 
     def getGoalLocation(self):
         return self.env.getGoalLocation()

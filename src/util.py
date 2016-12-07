@@ -35,4 +35,3 @@ def adjacent(map, pos):
     if map.checkRoadPoint(pos[0]-1, pos[1]):
         adj.append((pos[0]-1, pos[1]))
     return adj
-

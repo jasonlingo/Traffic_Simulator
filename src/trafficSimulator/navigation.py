@@ -1,5 +1,6 @@
 import heapq
-from Priority import RouteWeight
+from priority import RouteWeight
+
 
 class Navigator(object):
     """

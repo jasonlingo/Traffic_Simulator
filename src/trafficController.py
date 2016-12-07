@@ -1,16 +1,16 @@
 from __future__ import division
 import sys
 import time
-import heapq
-from Settings import SPEED_LIMIT_ON_CRASH
-from Settings import TIME_FOR_ACCIDENT
-from src.trafficSimulator.config import METER_TYPE
-from src.trafficSimulator.config import POI_LAMBDA
-from trafficSimulator.SinkSource import SinkSource
-from trafficSimulator.TrafficUtil import Traffic
-from trafficSimulator.TrafficUtil import DistanceUnit
-from src.trafficSimulator.config import MAJOR_ROAD_POI_LAMBDA
-from trafficSimulator.Priority import PriorityItemQueue
+
+from settings import SPEED_LIMIT_ON_CRASH
+from settings import TIME_FOR_ACCIDENT
+from trafficSimulator.config import METER_TYPE
+from trafficSimulator.config import POI_LAMBDA
+from trafficSimulator.config import MAJOR_ROAD_POI_LAMBDA
+from trafficSimulator.drawUtil import DistanceUnit
+from trafficSimulator.trafficUtil import Traffic
+from trafficSimulator.sinkSource import SinkSource
+from trafficSimulator.priority import PriorityItemQueue
 
 
 class TrafficController(object):
@@ -72,8 +72,6 @@ class TrafficController(object):
             if abs(len(self.cars) - preCarNum) >= 10:
                 print "total number of cars:", len(self.cars)
                 preCarNum = len(self.cars)
-
-
 
             # clear the cached average speed of roads in the previous loop.
             self.env.realMap.clearRoadAvgSpeed()  # fixme: delete this
@@ -153,10 +151,6 @@ class TrafficController(object):
             if car.delete:
                 car.release()
                 deletedCars.append(car.id)
-                # TODO remove comment below
-                # print ("%s went to its destination. [%d cars, %d taxis]" % (car.id,
-                #                                                            len(self.cars) - len(deletedCars),
-                #                                                            len(self.taxis)))
         for carId in deletedCars:
             del self.cars[carId]
 

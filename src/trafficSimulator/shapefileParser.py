@@ -2,10 +2,12 @@ import shapefile as shp
 import pygmaps
 import webbrowser
 import os
-from TrafficUtil import RoadType
-from Road import Road
-from Intersection import Intersection
-from Coordinate import Coordinate
+
+from trafficUtil import RoadType
+from road import Road
+from intersection import Intersection
+from coordinate import Coordinate
+from factory import RoadFactory
 
 
 class Shapefile(object):
@@ -92,7 +94,7 @@ class Shapefile(object):
                 if self.left is None or self.left > minLnt:
                     self.left = minLnt
 
-                rdInter = self.makeRoads(roadType, corners, center)
+                rdInter = RoadFactory.makeRoads(roadType, corners, center)
                 result[rdInter.id] = rdInter
 
         print ""
@@ -109,7 +111,7 @@ class Shapefile(object):
         if roadType == RoadType.ROAD:
             return Road(corners, center, None, None)
         elif roadType == RoadType.INTERSECTION:
-            return Intersection(corners, center, None)  # FIXME, rect
+            return Intersection(corners, center, None)
 
     def getBoard(self):
         return self.top, self.bot, self.right, self.left

@@ -4,11 +4,16 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import math
-from TrafficUtil import *
-from Trajectory import Trajectory
-from src.trafficSimulator.config import CAR_LENGTH, CAR_WIDTH, UPDATE_ROUTE_TIME
-from Settings import UPDATE_NAVIGATION
+from trafficUtil import Traffic
+from trafficUtil import sampleOne
 
+from trajectory import Trajectory
+from config import CAR_LENGTH
+from config import CAR_WIDTH
+from config import UPDATE_ROUTE_TIME
+from config import MAX_SPEED
+from src.settings import UPDATE_NAVIGATION
+from engine import Engine
 
 class Car(object):
     """
@@ -36,12 +41,11 @@ class Car(object):
         # ====================================================================
         # variables for driving this car
         # ====================================================================
-        self.speed = 0                                      # initial speed
-        self.maxSpeed = maxSpeed                            # the maximum speed this car can be drove
         self.length = CAR_LENGTH                            # the length (km) of this car
         self.width = CAR_WIDTH
         self.trajectory = Trajectory(self, lane, position)  # manage the moving trajectory of this car
         self.nextLane = None                                # the next lane this can is going to
+        self.engine = Engine(self.trajectory, maxSpeed)
 
         # ====================================================================
         # the destination and route for this care
@@ -52,9 +56,9 @@ class Car(object):
         self.navigator = navigator                          # Navigator object
 
     def __eq__(self, other):
-        if not other:
+        if (not other) or (not isinstance(other, Car)):
             return False
-        return self.id == other.id
+        return other.id == self.id
 
     def __hash__(self):
         return hash(self.id)
@@ -78,7 +82,7 @@ class Car(object):
         """
         :return: the speed (km/h)
         """
-        return self.speed
+        return self.engine.getSpeed()
 
     def getHeadCoords(self):
         """
@@ -101,18 +105,10 @@ class Car(object):
         """
         self.crashed = boolean
         if self.crashed:
-            self.speed = 0
+            self.engine.speed = 0
 
     def setSpeed(self, speed):
-        """
-        Set the current speed of this car to the given speed parameter.
-        The speed cannot exceed the maximum speed of this car and the
-        speed limit of the road.
-        :param speed: the new speed
-        """
-        self.speed = min([self.maxSpeed,
-                          max(round(speed, 10), 0),
-                          self.trajectory.getRoad().getSpeedLimit()])
+        self.engine.setSpeed(speed)
 
     def getNavigation(self):
         """
@@ -126,53 +122,6 @@ class Car(object):
         delete this car's position from the lane
         """
         self.trajectory.release()
-
-    def getAcceleration(self):
-        """
-        Get the acceleration factor of this car.
-        For the detail of this model, refer to https://en.wikipedia.org/wiki/Intelligent_driver_model
-        It will take the following factors into consideration:
-        1. the distance to the intersection line
-        2. the distance to the front car (if there is a car in front of this car)
-        3. the speed difference between the front car and this car
-        :return: accelerating factor
-        """
-        # ===========================================================
-        # some constant parameters
-        TIME_HEAD_AWAY   = 1.5    # second
-        DIST_GAP         = 0.002  # km
-        MAX_ACCELERATION = 0.001  # the maximum acceleration (km/s^2)
-        MAX_DECELERATION = 0.003  # the maximum deceleration (km/s^2)
-        # ===========================================================
-
-        # calculate the free road coefficient
-        nextCar, nextDistance = self.trajectory.nextCarDistance()
-        distanceToNextCar = max(nextDistance, 0)
-        deltaSpeed = (self.speed - nextCar.speed) if nextCar is not None else 0
-        speedRatio = self.speed / self.maxSpeed
-        freeRoadCoeff = pow(speedRatio, 4)
-
-        # calculate the busy road coefficient
-        timeGap = self.speed * TIME_HEAD_AWAY / Traffic.SECOND_PER_HOUR  # (km/h) * (second/3600) = km
-        breakGap = self.speed * deltaSpeed / (2 * math.sqrt(MAX_ACCELERATION * MAX_DECELERATION))
-        safeDistance = DIST_GAP + timeGap + breakGap
-        if distanceToNextCar > 0:
-            distRatio = safeDistance / distanceToNextCar
-            busyRoadCoeff = pow(distRatio, 2)
-        else:
-            busyRoadCoeff = sys.maxint
-
-        # calculate the intersection coefficient
-        safeIntersectionDist = 0.001 + timeGap + pow(self.speed, 2) / (2 * MAX_DECELERATION)
-        distanceToStopLine = self.trajectory.distanceToStopLine()
-        if distanceToStopLine > 0:
-            safeInterDistRatio = safeIntersectionDist / distanceToStopLine
-            intersectionCoeff = pow(safeInterDistRatio, 2)
-        else:
-            intersectionCoeff = sys.maxint
-
-        coeff = 1 - freeRoadCoeff - busyRoadCoeff - intersectionCoeff
-        return round(MAX_ACCELERATION * coeff, 10)
 
     def move(self, second):
         """
@@ -212,9 +161,9 @@ class Car(object):
             self.trajectory.switchLane(preferedLane)
 
     def calcMovingDist(self, second):
-        acceleration = self.getAcceleration()
-        self.setSpeed(self.speed + acceleration * second * Traffic.SECOND_PER_HOUR)
-        step = max(self.speed * second / Traffic.SECOND_PER_HOUR + 0.5 * acceleration * math.pow(second, 2), 0)
+        acceleration = self.engine.getAcceleration()
+        self.setSpeed(self.engine.speed + acceleration * second * Traffic.SECOND_PER_HOUR)
+        step = max(self.engine.speed * second / Traffic.SECOND_PER_HOUR + 0.5 * acceleration * math.pow(second, 2), 0)
         _, nextCarDist = self.trajectory.nextCarDistance()
         nextCarDist = max(nextCarDist, 0)
         return min(nextCarDist, step)
@@ -340,6 +289,14 @@ class Taxi(Car):
         self.destPosition = None
         self.called = False
         self.isTaxi = True
+
+    def __eq__(self, other):
+        if (not other) or (not isinstance(other, Taxi)):
+            return False
+        return other.id == self.id
+
+    def __hash__(self):
+        return hash(self.id)
 
     def setDestination(self, destination):
         """

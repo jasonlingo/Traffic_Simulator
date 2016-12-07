@@ -2,15 +2,15 @@ from __future__ import division
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
 import math
-from FixedRandom import FixedRandom
-from src.trafficSimulator.config import CLOSE_ALL_CRASH_LANES
-from trafficSimulator.TrafficUtil import CarType
-from trafficSimulator.RealMap import RealMap
-from trafficSimulator.Car import Car
+
+from trafficSimulator.fixedRandom import FixedRandom
+from trafficSimulator.config import CLOSE_ALL_CRASH_LANES
+from trafficSimulator.trafficUtil import CarType
+from trafficSimulator.realMap import RealMap
+from trafficSimulator.car import Car
 from QLEnvironment import QLEnvironment
-from Settings import GOAL_REWARD
+from settings import GOAL_REWARD
 
 
 class Environment(QLEnvironment):
@@ -25,13 +25,7 @@ class Environment(QLEnvironment):
         :return:
         """
         self.realMap = realMap
-        # self.goalLocation = self.realMap.getGoalLanePosition()  # Trajectory object #TODO: currently turn off
-
-        # block the goal road, only allow cars move out of the road
-        self.block = None
-        # if CLOSE_CRASH_LANE:
-        #     self.block = self.closeLane(self.goalLocation.current.lane)
-
+        self.block = None  # block the goal road, only allow cars move out of the road
         self.reachGoal = False
         self.cars = {}
         self.taxis = {}
