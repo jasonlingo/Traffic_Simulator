@@ -45,14 +45,10 @@ class RealMap(object):
         self.she = Shapefile(shapefileName, dataNum)  # parse shape file
         self.roads = {}
         self.intersections = {}
-
         self.navigator = Navigator(self)  # navigator for cars
-
-        # self.sinkSource = set()           # the places that can be both sink and source places for adding and deleting cars
-        self.sink = []                # the places that can only be sink places for deleting cars
-        self.source = []               # the places that can only be source places for adding cars
-        self.majorRoadSinkSource = []  # the sink places on major roads
-
+        self.sink = []                    # the places that can only be sink places for deleting cars
+        self.source = []                  # the places that can only be source places for adding cars
+        self.majorRoadSinkSource = []     # the sink places on major roads
         self.createMap()                  # create the map by connecting the intersection and roads
         self.majorRoads = []
         self.nonMajorRoads = []
@@ -74,10 +70,6 @@ class RealMap(object):
         self.aniMapPlotOK = False         # indicate the map has been plotted
         self.roadAvgSpeed = {}            # the cache for the average speed of each road
 
-
-    # ========================================================================
-    # Get and set methods
-    # ========================================================================
     def getRoads(self):
         if not self.roads:
             self.createMap()
@@ -91,7 +83,7 @@ class RealMap(object):
     def getBoard(self):
         return self.board
 
-    def setRandomGoalPosition(self):  # TODO: consider move to Experiment or Environment
+    def setRandomGoalPosition(self):
         """
         Assign the goal location.
         :return:
@@ -161,11 +153,6 @@ class RealMap(object):
             return roads
         else:
             return targetInter.getOutRoads()
-
-
-    # ========================================================================
-    # other methods
-    # ========================================================================
 
     def createMap(self):
         """
@@ -300,10 +287,8 @@ class RealMap(object):
 
     def assignSinkSourceOnIntersection(self):
         """
-        For those intersections that have only one out road, mark them both
+        For those intersections that have only one in-road (out-road), mark them both
         sink and source points.
-        for other intersections, assign a sink or source point, or both to them according
-        to the random probabilities.
         """
         for inter in self.intersections.values():
             if len(inter.getInRoads()) == 1:
@@ -330,13 +315,13 @@ class RealMap(object):
             currInter = queue.pop(0)
             for road in currInter.getOutRoads():
                 nextInter = road.getTarget()
-                if nextInter.id in visited:
+                if nextInter.id in visited:  # found a closed area
                     if road.getLength() >= MIN_SINK_SOURCE_ROAD_LENGTH:
                         # Pick the random position on the road. It is a absolute distance.
                         # We also prevent that the random position be set near the intersections by
                         # using a ROAD_OFFSET_FOR_SINK_SOURCE_POINT
                         position = (ROAD_OFFSET_FOR_SINK_SOURCE_POINT +
-                                   FixedRandom.random() * (1 - 2 * ROAD_OFFSET_FOR_SINK_SOURCE_POINT)) * road.getLength()
+                                   FixedRandom.random() * (1 - 2*ROAD_OFFSET_FOR_SINK_SOURCE_POINT)) * road.getLength()
                         point = SinkSource(None, road, position)
                         self.sink.append(point)
                         self.source.append(point)

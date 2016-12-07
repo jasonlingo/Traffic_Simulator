@@ -9,6 +9,7 @@ from Settings import MAJOR_ROAD_INIT_CAR_NUM_RATIO
 from Settings import NUM_TOP_TAXIS_TO_CRASH
 from Settings import RANDOM_SEED
 from Settings import UPDATE_NAVIGATION
+from Settings import PLOT_MAP
 from trafficSimulator.config import POI_LAMBDA
 from trafficSimulator.config import AVG_TIME_PERIOD
 from trafficSimulator.RealMap import RealMap
@@ -18,9 +19,9 @@ import threading
 import matplotlib.pyplot as plt
 
 
+
 if __name__ == '__main__':
 
-    DEBUG = True
 
     print "####################"
     print "Random seed = %d" % RANDOM_SEED
@@ -63,9 +64,7 @@ if __name__ == '__main__':
                                     CRASH_RELATIVE_POSITION,
                                     NUM_TOP_TAXIS_TO_CRASH)
 
-    if DEBUG:  # For debugging usage.
-        trafficCtrl.run()
-    else:
+    if PLOT_MAP:
         # Traffic simulator thread
         simulation = threading.Thread(target=trafficCtrl.run)
         simulation.start()
@@ -77,5 +76,7 @@ if __name__ == '__main__':
         ax.set_aspect(2.0)
         aniMap = AnimatedMap(realMap, env)
         aniMap.plotAnimatedMap(fig, ax)
+    else:
+        trafficCtrl.run()
 
     print "##### Experiments end #####"

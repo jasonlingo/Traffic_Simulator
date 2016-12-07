@@ -3,6 +3,9 @@ import sys
 # ===============================================
 # Traffic simulator settings
 # ===============================================
+PLOT_MAP = False
+"""Plot the animated map or not"""
+
 EXP_NUM = 30000
 """The total number of learning trials"""
 
@@ -36,7 +39,7 @@ NUM_TOP_TAXIS_TO_CRASH = 10
 TIME_FOR_ACCIDENT = 300
 """The time (in seconds) that a car crashes"""
 
-RANDOM_SEED = 47
+RANDOM_SEED = 67
 """The seed for the FixedRandom"""
 
 UPDATE_NAVIGATION = True
@@ -49,7 +52,6 @@ CRASH_ROAD = "Road_150"
 
 CRASH_RELATIVE_POSITION = 0.5
 """Relative position of the road (0.2 - 0.8, leave some space for the car's body)"""
-
 
 # ===============================================
 # Q-learning settings
