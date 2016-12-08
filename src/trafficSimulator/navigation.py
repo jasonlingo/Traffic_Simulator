@@ -1,5 +1,5 @@
 import heapq
-from priority import RouteWeight
+from trafficUtil import RouteWeight
 
 
 class Navigator(object):
@@ -8,7 +8,7 @@ class Navigator(object):
     It takes the RealMap and find the quickest route.
     """
 
-    MAX_TIME = 1000000000
+    MAX_TIME = 1000000000  # The maximum time for the environment. When it is reached, start from 0 again.
 
     def __init__(self, realMap):
         self.realMap = realMap
@@ -27,7 +27,6 @@ class Navigator(object):
         times = {}    # key: intersection, value: time
         backPtr = {}  # key: intersection, value: intersection
         routeWeights = {}
-
         sourceInter = source.getTarget()
 
         if destination.isIntersection():
@@ -52,8 +51,6 @@ class Navigator(object):
                 if nextInter in times:
                     if newTime < times[nextInter]:
                         key = routeWeights[nextInter]
-                        if key not in heap:
-                            print "not found"
                         key.time = newTime
                         heapq.heapify(heap)
                         times[nextInter] = newTime

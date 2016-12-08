@@ -37,17 +37,20 @@ if __name__ == '__main__':
     carNum = CAR_NUM
 
     if CRASH_ROAD:
-        # if use fixed crash location, then keep one car for the crash.
+        # When CRASH_ROAD is not None, then the system want to use use a fixed crash location.
+        # So keep one car for the crash.
         carNum -= 1
 
     # create a traffic controller
-    trafficCtrl = TrafficController(env,
-                                    carNum,
-                                    TAXI_NUM,
-                                    MAJOR_ROAD_INIT_CAR_NUM_RATIO,
-                                    CRASH_ROAD,
-                                    CRASH_RELATIVE_POSITION,
-                                    NUM_TOP_TAXIS_TO_CRASH)
+    trafficCtrl = TrafficController(
+        env,
+        carNum,
+        TAXI_NUM,
+        MAJOR_ROAD_INIT_CAR_NUM_RATIO,
+        CRASH_ROAD,
+        CRASH_RELATIVE_POSITION,
+        NUM_TOP_TAXIS_TO_CRASH
+    )
 
     # start simulation
     if PLOT_MAP:
@@ -57,7 +60,6 @@ if __name__ == '__main__':
 
         # Plot the animated map
         fig, ax = plt.subplots(figsize=(14, 4))
-
         fig.set_dpi(85)  # adjust the subplot size
         ax.set_aspect(2.0)
         aniMap = AnimatedMap(realMap, env)

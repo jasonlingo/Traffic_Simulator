@@ -9,14 +9,14 @@ from trafficSimulator.config import POI_LAMBDA
 from trafficSimulator.config import MAJOR_ROAD_POI_LAMBDA
 from trafficSimulator.drawUtil import DistanceUnit
 from trafficSimulator.trafficUtil import Traffic
+from trafficSimulator.trafficUtil import PriorityItemQueue
 from trafficSimulator.sinkSource import SinkSource
-from trafficSimulator.priority import PriorityItemQueue
 
 
 class TrafficController(object):
     """
-    A class that control the traffic of a map. It make each car to move and
-    make a random car accident. It also generate car flow into the map.
+    A class that control the traffic of a map. It make each car to move and create a crash event at a fixed
+    or random location. It also add new cars into the map according to a Poisson point process.
     """
 
     def __init__(self, env, carNum, taxiNum, majorRoadCarInitRatio, crashRoad, crashPos, numTopTaxi):
@@ -35,49 +35,58 @@ class TrafficController(object):
         self.numTopTaxi = numTopTaxi
 
         # create random cars and taxis
-        majorRoadCarsNum = int((carNum + 1) * majorRoadCarInitRatio)
-        self.env.addRandomCars(carNum - majorRoadCarsNum, False)
-        self.env.addRandomCars(majorRoadCarsNum, True)
-        majorRoadTaxisNum = int((taxiNum + 1) * majorRoadCarInitRatio)
-        self.env.addRandomTaxis(taxiNum - majorRoadTaxisNum, False)
-        self.env.addRandomTaxis(majorRoadTaxisNum, True)
+        self.initRandomCar(carNum, taxiNum, majorRoadCarInitRatio)
 
         self.cars = self.env.getCars()
         self.taxis = self.env.getTaxis()
-
         self.carCrashed = False
         self.crashedCars = []
         self.calledTaxi = []
         self.arrivedTaxiNum = 0
         self.isCalledTaxiArrived = False
 
+    def initRandomCar(self, carNum, taxiNum, majorRoadCarInitRatio):
+        """
+        Create cars and taxis on major roads and general roads based on the given majorRoadCarInitratio.
+        :param carNum: (int) total number of cars to be created.
+        :param taxiNum: (int) total number taxis to be created.
+        :param majorRoadCarInitRatio: (float) 0~1
+        :return:
+        """
+        # create cars
+        majorRoadCarsNum = int((carNum + 1) * majorRoadCarInitRatio)
+        self.env.addRandomCars(carNum - majorRoadCarsNum, False)
+        self.env.addRandomCars(majorRoadCarsNum, True)
+        # create taxis
+        majorRoadTaxisNum = int((taxiNum + 1) * majorRoadCarInitRatio)
+        self.env.addRandomTaxis(taxiNum - majorRoadTaxisNum, False)
+        self.env.addRandomTaxis(majorRoadTaxisNum, True)
+
     def run(self):
         """
         Run the traffic simulation:
         1. Make each car and taxi move.
-        2. Add taxi and car into the map according to the poisson arrival process.
-        3. Make a random car crash. Stop the car by setting it speed to 0 and mark it as crashed.
-        4. Change the traffic lights.
+        2. If a arrives its destination, then remove it from the map.
+           If a taxi arrives its destination, assign a new destination to it.
+        3. Add taxi and car into the map according to the poisson arrival process.
+        4. When the time reach the time that a crash should happens, make a car crash.
+           Stop the car by setting it speed to 0 and mark it as crashed.
+        5. Change the traffic lights.
         """
         print "Traffic controller is running..."
         time.sleep(5)
         self.env.setResetFlag(False)
-
-        # preTime = time.time()
         deltaTime = 0.3  # unit: second
-
         preCarNum = len(self.cars)
 
         while not self.isCalledTaxiArrived or self.arrivedTaxiNum < self.numTopTaxi:
+            # print the total number of cars if the number increases or decreases at least 10
             if abs(len(self.cars) - preCarNum) >= 10:
                 print "total number of cars:", len(self.cars)
                 preCarNum = len(self.cars)
 
-            # clear the cached average speed of roads in the previous loop.
-            self.env.realMap.clearRoadAvgSpeed()  # fixme: delete this
-
             # increment the global timer
-            Traffic.updateGlobalTime(deltaTime)
+            Traffic.increaseGlobalTime(deltaTime)
 
             # make a car crash at a random or fixed location
             if not self.crashedCars and Traffic.globalTime >= TIME_FOR_ACCIDENT:
@@ -119,6 +128,10 @@ class TrafficController(object):
             # time.sleep(0.2)
 
     def callTaxiForCrash(self, crashedCar):
+        """
+        Call the nearest taxi for the crash event. In addition, also call other taxis for the same crash event.
+        :param crashedCar:
+        """
         crashRoad = crashedCar.trajectory.getRoad()
         crashLoc = SinkSource(None, crashRoad, crashedCar.trajectory.current.position)
         hasCalledTaxi = False
@@ -130,11 +143,17 @@ class TrafficController(object):
                 nearestTaxi.called = True
                 self.calledTaxi.append(nearestTaxi)
                 hasCalledTaxi = True
+
+        # Call other taxis for the crash event.
         for taxi in self.taxis.values():
             if taxi not in self.calledTaxi:
                 taxi.setDestination(crashLoc)
 
     def changeCrashRoadSpeed(self, crashedCar):
+        """
+        Set the speed limit of the road where a crash happens to SPEED_LIMIT_ON_CRASH.
+        :param crashedCar:
+        """
         crashRoad = crashedCar.trajectory.getRoad()
         crashRoad.speedLimit = SPEED_LIMIT_ON_CRASH
         print "%s crashed on %s at time %d" % (crashedCar.id, crashRoad.id, Traffic.globalTime)
@@ -165,7 +184,6 @@ class TrafficController(object):
                     taxi.release()
                     deleteTaxi.append(taxi)
                     self.arrivedTaxiNum += 1
-
                     if taxi.called:
                         self.isCalledTaxiArrived = True
                         print "=====>",
@@ -177,7 +195,7 @@ class TrafficController(object):
                         taxi.alive = False
                     else:
                         print "%s arrived its destination. Assign a new destination to it." % taxi.id
-                        newDestination = self.env.realMap.getRandomDestination()
+                        newDestination = self.env.getRandomDestination()
                         taxi.destination = newDestination
                         taxi.delete = False
                         taxi.alive = True
@@ -187,6 +205,12 @@ class TrafficController(object):
             del self.taxis[taxi.id]
 
     def callTaxi(self, taxi, dest):
+        """
+        Call the taxi for the destination.
+        :param taxi:
+        :param dest:
+        :return: True if successfully called the taxi; otherwise return False.
+        """
         if taxi.calledByDestination(dest):
             print "Called taxi %s for the crash" % taxi.id
             return True
@@ -198,13 +222,12 @@ class TrafficController(object):
         """
         Use Dijkstra algorithm to find an available taxi that is nearest
         (by traffic time) to the loc.
-
         :param loc: (SinkSource)
-        :return: the nearest taxi
+        :return: the nearest taxi.
         """
         print "Searching taxis =========================================="
 
-          # check if there is a taxi on the same road (behind the crashed car)
+        # check if there is a taxi on the same road (behind the crashed car)
         sameRoadTaxi = self.findSameRoadTaxi(loc)
         if sameRoadTaxi is not None:
             return sameRoadTaxi
@@ -213,12 +236,18 @@ class TrafficController(object):
         quickestTaxi = self.findQuistestTaxi(loc)
 
         print "=========================================================="
+
         if quickestTaxi is None:
             print "No taxi available!"
         else:
             return quickestTaxi
 
     def findSameRoadTaxi(self, loc):
+        """
+        Find if there is a taxi in the back of the crash car on the same road with the crashed location.
+        :param loc: the crash location.
+        :return: the nearest taxi.
+        """
         fastTaxi = [sys.maxint, None]
         for car in loc.road.getCars():
             if car.isTaxi and car.available:
@@ -230,6 +259,12 @@ class TrafficController(object):
             return fastTaxi[1]
 
     def findQuistestTaxi(self, loc):
+        """
+        Use Dijkstra shortest path to find the nearest taxi to the crash location. The weight of each road is the
+        average traffic time.
+        :param loc: the crash location.
+        :return: the nearest taxi.
+        """
         fastTaxi = [sys.maxint, None]
         roadTrafficTime = {}
         frontier = PriorityItemQueue()
