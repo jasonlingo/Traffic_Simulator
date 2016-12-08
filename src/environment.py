@@ -1,22 +1,15 @@
 from __future__ import division
-import os
-import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-import math
 
 from trafficSimulator.fixedRandom import FixedRandom
 from trafficSimulator.config import CLOSE_ALL_CRASH_LANES
 from trafficSimulator.trafficUtil import CarType
 from trafficSimulator.realMap import RealMap
 from trafficSimulator.car import Car
-from QLEnvironment import QLEnvironment
-from settings import GOAL_REWARD
 
 
-class Environment(QLEnvironment):
+class Environment(object):
     """
-    An Environment class that inherits from the QLInterface.
-    It implements all the methods for QLearning class's needs.
+    This class is the interface between the traffic controller and the RealMap.
     """
 
     def __init__(self, realMap):
@@ -57,15 +50,6 @@ class Environment(QLEnvironment):
             lane.setBlocked(True)
             return [Car(lane)]
 
-    def timeToGoalState(self, fromPos):
-        """
-        Calculate the time from the given
-        :param fromPos: the original position (x, y)
-        :return: the time from the original position to the goal state's location
-        """
-        # TODO: need to replace this method later
-        return self.realMap.trafficTime(fromPos, self.goalLocation, None)
-
     def getAction(self, pos):
         """
         Get the available actions for the given position.
@@ -74,55 +58,11 @@ class Environment(QLEnvironment):
         """
         return RealMap.getAction(pos)
 
-    def getReward(self, pos, action):
-        """
-        Return the Goal reward if the given position is the goal location.
-        Otherwise, return the reward for non-goal position-action
-        Args:
-            pos: Road
-            action: Road
-        Returns:
-            the corresponding reward
-        """
-        if self.checkArriveGoal(pos):
-            return GOAL_REWARD
-
-        # TODO: modelizing
-        #reward = 0.0
-        # =================
-        reward = -1.0 + math.pow(10, -self.realMap.trafficTime(pos, self.goalLocation.current.lane.road) / 100.0)
-        # =================
-        return reward
-
     def setReachGoal(self, newBool):
         self.reachGoal = newBool
 
     def isGoalReached(self):
         return self.reachGoal
-
-    def getGoalLocation(self):
-        """
-        :return: a Trajectory object containing the lane and position of the goal location
-        """
-        return self.goalLocation
-
-    def checkArriveGoal(self, pos):
-        """
-        Check whether the position reaches the goal position. If the given position is
-        within the goal +/- 0.2 unit distance, then it reaches the goal location.
-        Args:
-            pos: Road
-        Returns:
-            True: if the position is reaching the goal location;
-            False: otherwise
-        """
-        goalRoad = self.goalLocation.current.lane.road
-        goalInters = [goalRoad.getTarget(), goalRoad.getSource()]  # two intersections connecting to this road
-        if pos.getTarget() in goalInters:
-            return True
-        if pos.getSource() in goalInters:
-            return True
-        return False
 
     def addRandomCars(self, num, onMajorRoad=False):
         """
@@ -162,6 +102,9 @@ class Environment(QLEnvironment):
         crashedCar.setCrash(True)
         return crashedCar
 
+    def getRandomDestination(self):
+        return self.realMap.getRandomDestination()
+
     def getCrashedCar(self):
         return self.crashedCars
 
@@ -185,12 +128,5 @@ class Environment(QLEnvironment):
     def changeContralSignal(self, delta):
         self.realMap.changeContralSignal(delta)
 
-    def setCarRunsOK(self, b):
-        self.realMap.setCarRunsOK(b)
-
-    def isAniMapPlotOk(self):
-        return self.realMap.isAniMapPlotOk()
-
     def updateContralSignal(self, delta):
         self.realMap.updateContralSignal(delta)
-

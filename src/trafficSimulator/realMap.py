@@ -1,9 +1,4 @@
 import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
-import pygmaps
-import webbrowser
 import time
 from collections import defaultdict
 from shapefileParser import Shapefile
@@ -22,7 +17,6 @@ from config import MAJOR_ROAD_MIN_LEN
 from config import CAR_LENGTH
 from config import MIN_SINK_SOURCE_ROAD_LENGTH
 from config import ROAD_OFFSET_FOR_SINK_SOURCE_POINT
-from src.Dijkstra import dijkstraTrafficTime
 
 
 class RealMap(object):
@@ -57,16 +51,12 @@ class RealMap(object):
                 self.nonMajorRoads.append(road)
 
         self.board = self.she.getBoard()  # [top, bot, right, left] of the borders of this map
-
         self.goalLocation = None          # the car crash's location
-        # self.setRandomGoalPosition()    # disable for current version
-
         self.cars = {}                    # store all cars' id and instance
         self.taxis = {}                   # store all taxis' id and instance
         self.reset = False                # indicate whether it is in the middle (reset) of experiments
         self.locDict = defaultdict(list)  # recode which car is on which lane
         self.aniMapPlotOK = False         # indicate the map has been plotted
-        self.roadAvgSpeed = {}            # the cache for the average speed of each road
 
     def getRoads(self):
         if not self.roads:
@@ -207,7 +197,7 @@ class RealMap(object):
 
     def createS2Map(self):
         """
-        Create the map by utilizing the Google S2 algorithm.
+        Create the map by utilizing the Google S2 algorithm. This can speed up the map creation process.
         (https://docs.google.com/presentation/d/1Hl4KapfAENAOf4gv-pSngKwvS_jwNVHRPZTTDzXXn6Q/view?pli=1#slide=id.i95)
         :return:
         """
@@ -276,7 +266,6 @@ class RealMap(object):
         if not self.sink or not self.source:
             self.sink = []
             self.source = []
-            # self.sinkSource = set()
             self.assignSinkSourceOnIntersection()
             self.assignSinkSourceOnRoad()
             self.assignSinkSourceOnMajorRoad()
@@ -345,7 +334,6 @@ class RealMap(object):
         """
         Randomly select one land from a randomly selected road and position (the distance from
         the source point to the picked position.
-
         :param onMajorRoad: (boolean) indicate whether the cars are generated on major roads
         :return: the selected lane and position.
         """
@@ -373,16 +361,11 @@ class RealMap(object):
             car.release()
         self.cars = {}
 
-    def clearRoadAvgSpeed(self):
-        self.roadAvgSpeed.clear()
-
     def addRandomCars(self, num, carType, onMajorRoad):
         """
-        Add num cars into the self.cars dictionary by their id. If an id
-        already exists in the dictionary, then update the dictionary with
-        the car.
+        Add num cars into the self.cars dictionary by their id. If an id already exists in the dictionary,
+        then update the dictionary with the car.
         For each car, also add a destination for it.
-
         :param num: the total number of cars to be added into the dictionary
         :param carType: the type of car (taxi or car) to be added
         :param onMajorRoad: indicate the cars are added on major roads
@@ -564,30 +547,6 @@ class RealMap(object):
         else:
             return sys.maxint
 
-    def trafficTime(self, source, destination):
-        """
-        Calculate the time from the source location to the destination location considering the
-        speed limit of every sub-region.
-        Using Dijkstra's algorithm.
-        Args:
-            source: Road
-            destination: Road
-        Returns: traffic time
-        """
-        goals = [destination.getTarget(), destination.getSource()]
-        time = dijkstraTrafficTime(self, source.getTarget(), goals)
-        return time
-
-    def getPathToDestination(self, source, destination):
-        """
-        Get the quickest path from the source to the destination by using a Dijkstra algorithm.
-
-        :param source:
-        :param destination:
-        :return: a list of roads
-        """
-        pass #TODO
-
     @classmethod
     def getOppositeRoad(cls, road):
         """
@@ -597,47 +556,6 @@ class RealMap(object):
         """
         source = road.getSource()
         target = road.getTarget()
-
         for rd in target.getOutRoads():
             if rd.getTarget.id == source.id:
                 return rd
-
-    # =========================================================================
-    # Just for checking the map representation
-    # =========================================================================
-    def plotMap(self):
-        """
-        Plot the map according to the roads and intersections.
-        """
-        print "plotting map"
-        if not self.intersections or not self.roads:
-            print "no map to plot"
-            return
-
-        inter = self.intersections.values()[0]
-        mymap = pygmaps.maps(inter.center.lat, inter.center.lng, 12)
-
-        i = 0
-        for inter in self.intersections.values():
-            if inter in self.sinkSource:
-                i += 1
-                mymap.addpoint(inter.center.lat, inter.center.lng, "#FF00FF")
-            else:
-                mymap.addpoint(inter.center.lat, inter.center.lng, "#0000FF")
-        print "%d intersections have only one road connected" % i
-
-        for rd in self.roads.values():
-            if rd.getSource() and rd.getTarget():
-                mymap.addpath([(rd.getSource().center.lat, rd.getSource().center.lng),
-                               (rd.getTarget().center.lat, rd.getTarget().center.lng)], "#00FF00")
-
-        edges = [(self.she.top, self.she.left), (self.she.top, self.she.right), (self.she.bot, self.she.right), (self.she.bot, self.she.left)]
-
-        mymap.addpath(edges, "#FF00FF")
-
-        mapFilename = "shapefileMap.html"
-        mymap.draw('./' + mapFilename)
-
-        # Open the map file on a web browser.
-        url = "file://" + os.getcwd() + "/" + mapFilename
-        webbrowser.open_new(url)
